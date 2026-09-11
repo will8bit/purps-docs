@@ -1,26 +1,14 @@
 ---
 title: "Manage a coin"
 sidebarTitle: "Manage a coin"
-description: "Creator-signed changes to a purps.lol coin."
+description: "Attach a strategy to a coin launched without one."
 icon: "sliders-horizontal"
 ---
 
-Both changes are signed by the launch's creator wallet, the same prepare-sign-submit way.
+Signed by the launch's creator wallet, the same prepare-sign-submit way.
 
 ## Attach a strategy later
 
 A purps.lol coin launched with the `airdrop` or `split` preset can have a strategy attached afterwards. `POST /coins/{mint}/strategy/prepare` with `config`, sign, then `POST /coins/{mint}/strategy/submit` with the identical `config`, `ts` and `signature`.
 
 A `creator`-preset launch cannot: its fee vault is owned by your wallet on chain and the strategy could never claim from it.
-
-## Change what holders are paid in
-
-For a coin that pays its holders: `POST /coins/{mint}/payout/prepare` with `payoutChoice`, sign, then `POST /coins/{mint}/payout/submit`.
-
-| `payoutChoice` | Holders receive |
-| --- | --- |
-| `coin` | The coin itself. |
-| `auto` | The asset backing the strategy's largest perp leg. |
-| a mint address | That backed asset. |
-
-A burn coin is refused; switching from burning to paying is an admin decision.
