@@ -74,7 +74,7 @@
         "icon": "coins"
       },
       {
-        "group": "Launch on Solana",
+        "group": "Launch on purps.lol",
         "openapi": "https://purps.lol/api/v1/openapi.json",
         "pages": [
           "POST /launches/prepare",
