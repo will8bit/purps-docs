@@ -30,7 +30,7 @@ On top of the platform's 1%, you set your own creator fee with `creatorFeeBps`: 
     Sign each of `transactions` with the creator wallet, and the one at `createIndex` with the mint keypair from `mintSecret` as well. `POST /transactions/send` them one at a time, in order, waiting for each to confirm before the next: when the pair is not SOL and there is a dev buy, the first transaction is a swap the launch spends. If `confirmed` is false, poll `GET /transactions/{signature}` until it is.
   </Step>
   <Step title="Wait for live">
-    Poll `GET /launches/{mint}` every few seconds until `status` is `live`, usually within half a minute of the create confirming. We watch the chain and flip it ourselves; you do not need to stay online, and if your process dies after sending, the launch still completes. A launch whose transaction never lands turns `failed` with a `failureReason` after an hour.
+    Poll `GET /launches/{mint}` every few seconds until `status` is `live`, usually within half a minute of the create confirming. We watch the chain and flip it ourselves; you do not need to stay online, and if your process dies after sending, the launch still completes. A launch whose transaction never lands turns `failed` after an hour.
   </Step>
 </Steps>
 
@@ -130,7 +130,7 @@ for (const [i, b64] of build.transactions.entries()) {
 for (;;) {
   const launch = await call(`/launches/${build.mint}`);
   if (launch.status === "live") break;
-  if (launch.status === "failed") throw new Error(launch.failureReason);
+  if (launch.status === "failed") throw new Error("launch failed");
   await sleep(3000);
 }
 console.log("live at", build.url);
