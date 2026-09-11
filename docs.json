@@ -31,113 +31,125 @@
     "codeblocks": "system"
   },
   "navigation": {
-    "groups": [
+    "tabs": [
       {
-        "group": "Start here",
-        "pages": [
-          "index",
-          "guides/signing",
-          "guides/errors-and-limits"
-        ],
-        "icon": "rocket"
+        "tab": "Guides",
+        "icon": "book-open",
+        "groups": [
+          {
+            "group": "Start here",
+            "pages": [
+              "index",
+              "guides/signing",
+              "guides/errors-and-limits"
+            ],
+            "icon": "rocket"
+          },
+          {
+            "group": "Launch",
+            "pages": [
+              "guides/launch-solana",
+              "guides/launch-pumpfun",
+              "guides/launch-robinhood",
+              "guides/redirect"
+            ],
+            "icon": "sparkles"
+          },
+          {
+            "group": "After launch",
+            "pages": [
+              "guides/manage",
+              "guides/trade"
+            ],
+            "icon": "settings-2"
+          }
+        ]
       },
       {
-        "group": "Launch",
-        "pages": [
-          "guides/launch-solana",
-          "guides/launch-pumpfun",
-          "guides/launch-robinhood",
-          "guides/redirect"
-        ],
-        "icon": "sparkles"
-      },
-      {
-        "group": "After launch",
-        "pages": [
-          "guides/manage",
-          "guides/trade"
-        ],
-        "icon": "settings-2"
-      },
-      {
-        "group": "Coins",
-        "openapi": "https://purps.lol/api/v1/openapi.json",
-        "pages": [
-          "GET /coins",
-          "GET /coins/{mint}",
-          "GET /index",
-          "GET /search",
-          "GET /launches",
-          "GET /markets",
-          "GET /pairs"
-        ],
-        "icon": "coins"
-      },
-      {
-        "group": "Launch on purps.lol",
-        "openapi": "https://purps.lol/api/v1/openapi.json",
-        "pages": [
-          "POST /launches/prepare",
-          "POST /launches/submit",
-          "GET /launches/{mint}",
-          "POST /transactions/send",
-          "GET /transactions/{signature}"
-        ],
-        "icon": "sun"
-      },
-      {
-        "group": "Launch on pump.fun",
-        "openapi": "https://purps.lol/api/v1/openapi.json",
-        "pages": [
-          "POST /pumpfun/prepare",
-          "POST /pumpfun/submit",
-          "POST /pumpfun/fees",
-          "POST /redirects"
-        ],
-        "icon": "flame"
-      },
-      {
-        "group": "Redirect a pump.fun coin",
-        "openapi": "https://purps.lol/api/v1/openapi.json",
-        "pages": [
-          "GET /redirects/{mint}",
-          "POST /pumpfun/fees",
-          "POST /redirects"
-        ],
-        "icon": "corner-down-right"
-      },
-      {
-        "group": "Launch on Robinhood Chain",
-        "openapi": "https://purps.lol/api/v1/openapi.json",
-        "pages": [
-          "POST /robinhood/launches/prepare",
-          "POST /robinhood/launches/submit",
-          "GET /robinhood/launches/{ref}",
-          "POST /robinhood/register/prepare",
-          "POST /robinhood/register/submit"
-        ],
-        "icon": "feather"
-      },
-      {
-        "group": "Manage a coin",
-        "openapi": "https://purps.lol/api/v1/openapi.json",
-        "pages": [
-          "POST /coins/{mint}/strategy/prepare",
-          "POST /coins/{mint}/strategy/submit",
-          "POST /coins/{mint}/payout/prepare",
-          "POST /coins/{mint}/payout/submit"
-        ],
-        "icon": "sliders-horizontal"
-      },
-      {
-        "group": "Trade",
-        "openapi": "https://purps.lol/api/v1/openapi.json",
-        "pages": [
-          "POST /trades/solana",
-          "POST /trades/robinhood",
-          "POST /trades/robinhood/record"
-        ],
-        "icon": "arrow-left-right"
+        "tab": "API reference",
+        "icon": "code",
+        "groups": [
+          {
+            "group": "Coins",
+            "openapi": "https://purps.lol/api/v1/openapi.json",
+            "pages": [
+              "GET /coins",
+              "GET /coins/{mint}",
+              "GET /index",
+              "GET /search",
+              "GET /launches",
+              "GET /markets",
+              "GET /pairs"
+            ],
+            "icon": "coins"
+          },
+          {
+            "group": "Launch on purps.lol",
+            "openapi": "https://purps.lol/api/v1/openapi.json",
+            "pages": [
+              "POST /launches/prepare",
+              "POST /launches/submit",
+              "GET /launches/{mint}",
+              "POST /transactions/send",
+              "GET /transactions/{signature}"
+            ],
+            "icon": "sun"
+          },
+          {
+            "group": "Launch on pump.fun",
+            "openapi": "https://purps.lol/api/v1/openapi.json",
+            "pages": [
+              "POST /pumpfun/prepare",
+              "POST /pumpfun/submit",
+              "POST /pumpfun/fees",
+              "POST /redirects"
+            ],
+            "icon": "flame"
+          },
+          {
+            "group": "Redirect a pump.fun coin",
+            "openapi": "https://purps.lol/api/v1/openapi.json",
+            "pages": [
+              "GET /redirects/{mint}",
+              "POST /pumpfun/fees",
+              "POST /redirects"
+            ],
+            "icon": "corner-down-right"
+          },
+          {
+            "group": "Launch on Robinhood Chain",
+            "openapi": "https://purps.lol/api/v1/openapi.json",
+            "pages": [
+              "POST /robinhood/launches/prepare",
+              "POST /robinhood/launches/submit",
+              "GET /robinhood/launches/{ref}",
+              "POST /robinhood/register/prepare",
+              "POST /robinhood/register/submit"
+            ],
+            "icon": "feather"
+          },
+          {
+            "group": "Manage a coin",
+            "openapi": "https://purps.lol/api/v1/openapi.json",
+            "pages": [
+              "POST /coins/{mint}/strategy/prepare",
+              "POST /coins/{mint}/strategy/submit",
+              "POST /coins/{mint}/payout/prepare",
+              "POST /coins/{mint}/payout/submit"
+            ],
+            "icon": "sliders-horizontal"
+          },
+          {
+            "group": "Trade",
+            "openapi": "https://purps.lol/api/v1/openapi.json",
+            "pages": [
+              "POST /trades/solana",
+              "POST /trades/robinhood",
+              "POST /trades/robinhood/record"
+            ],
+            "icon": "arrow-left-right"
+          }
+        ]
       }
     ],
     "global": {
