@@ -1,0 +1,18 @@
+---
+title: "Trade"
+description: "Buy or sell on a coin's curve or pool."
+---
+
+## Solana
+
+`POST /trades/solana` with `mint`, `side`, `owner` and either `amountQuote` (a buy, in the pair token) or `amountTokenRaw` (a sell, raw token units as a string). Set `viaSol: true` to pay or receive SOL on a non-SOL pair; the trade is routed through Jupiter.
+
+The transaction is simulated before it is returned, so a trade that would fail comes back as a plain error rather than a wallet warning. Sign it and send it through `POST /transactions/send`.
+
+Only live launchpad coins trade here. A graduated coin trades on its pool through any Solana aggregator.
+
+## Robinhood Chain
+
+`POST /trades/robinhood` with `token`, `side`, `owner`, `amount` and optionally `slippageBps` and `payWith: "eth"`. The coin trades on its curve until graduation and on its Uniswap pool after; the response says which with `route`, and quotes `out` and `minOut`.
+
+Send each of `steps` from your wallet, in order. They include any approvals, the trade, and purps.lol's 1% fee as a final transfer. Then `POST /trades/robinhood/record` with `feeTicket` and the trade's hash so it shows on the coin page.

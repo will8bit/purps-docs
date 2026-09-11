@@ -1,0 +1,39 @@
+---
+title: "Launch on the PURPS launchpad"
+description: "A coin on a Meteora curve, paired with SOL or any listed token."
+---
+
+A launchpad coin trades on a Meteora bonding curve until it raises the equivalent of 85 SOL, then graduates to a pool. Its creator fees go where you choose with `feePreset`:
+
+| Preset | Where creator fees go |
+| --- | --- |
+| `airdrop` | To the coin's holders, paid out in the pair token. |
+| `split` | Half to holders, half to you. |
+| `creator` | All to you, claimable on Meteora. No strategy can be attached later. |
+| `strategy` | Into a strategy you send with the launch: buybacks, perps, payouts. |
+
+<Steps>
+  <Step title="Pick a pair">
+    `GET /pairs` and take a `mint` from `meteora`. SOL is `So11111111111111111111111111111111111111112`.
+  </Step>
+  <Step title="Prepare">
+    `POST /launches/prepare` with `name`, `symbol`, `quoteMint`, `feePreset`, `creatorWallet` and optionally `devBuySol`, `creatorFeeBps` and `strategy`. Sign `message` with the creator wallet.
+  </Step>
+  <Step title="Submit">
+    `POST /launches/submit` with the same terms, the logo (`imageUrl` or `image`), socials, `ts` and `signature`. We upload the metadata, build the transactions and record the launch as pending.
+  </Step>
+  <Step title="Sign and send">
+    Sign each of `transactions` with the creator wallet, and the one at `createIndex` with the mint keypair from `mintSecret` as well. `POST /transactions/send` each in order. If `confirmed` is false, poll `GET /transactions/{signature}`.
+  </Step>
+  <Step title="Wait for live">
+    Poll `GET /launches/{mint}` until `status` is `live`. We watch the chain and flip it within seconds of the pool appearing. You do not need to stay online; if your process dies after sending, the launch still completes.
+  </Step>
+</Steps>
+
+## What it costs
+
+The creator wallet needs about 0.03 SOL plus the dev buy. A dev buy on a non-SOL pair is converted from SOL by a swap transaction that runs before the launch; it is sized to the swap's worst-case output so it never spends more than the swap delivers.
+
+## A strategy launch
+
+With `feePreset: "strategy"`, send a `strategy` object with the terms. It is hashed into the signed message, so it must be sent byte-for-byte the same to submit. The strategy is registered by us the moment the launch goes live; you never come back for a second signature. See the `Strategy` object in the reference for its fields, and `GET /markets` for the perp markets and their leverage caps.

@@ -1,0 +1,70 @@
+---
+title: "How signing works"
+description: "No API keys. Your wallet's signature is the authorisation."
+---
+
+There are no API keys. A write is authorised by a signature from the wallet that owns the outcome: the creator wallet for a launch, the coin's creator for a strategy change, your own wallet for a trade.
+
+Every write comes as a pair:
+
+<Steps>
+  <Step title="Prepare">
+    `POST …/prepare` with the terms. It returns the exact text to sign as `message`, and `ts`, the timestamp embedded in it. Nothing is stored or spent.
+  </Step>
+  <Step title="Sign">
+    Sign `message` in your wallet. The message embeds a hash of the terms, so nothing can change between the two calls.
+  </Step>
+  <Step title="Submit">
+    `POST …/submit` with the same terms, plus `ts` and `signature`. Signatures are valid for five minutes.
+  </Step>
+</Steps>
+
+## Solana
+
+Sign the message's UTF-8 bytes with ed25519, exactly as a wallet's `signMessage` does. No prefix, no hashing. Send the signature as base58.
+
+```js
+import nacl from "tweetnacl";
+import bs58 from "bs58";
+
+const { data } = await fetch("https://purps.lol/api/v1/launches/prepare", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify(terms),
+}).then((r) => r.json());
+
+const bytes = new TextEncoder().encode(data.message);
+const signature = bs58.encode(nacl.sign.detached(bytes, keypair.secretKey));
+
+await fetch("https://purps.lol/api/v1/launches/submit", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ ...terms, image, ts: data.ts, signature }),
+});
+```
+
+With a browser wallet, `const sig = await wallet.signMessage(bytes)` gives the same bytes to base58-encode.
+
+## Robinhood Chain
+
+Sign with `personal_sign` (EIP-191). With viem:
+
+```js
+const signature = await walletClient.signMessage({ message: data.message });
+```
+
+Send the 0x-hex signature as returned. The wallet address in the message is lower-cased; send `creatorWallet` in any case and we lower-case it the same way.
+
+## Transactions
+
+We never sign a transaction. On Solana, submit returns unsigned transactions as base64; you sign them and send them through [`POST /transactions/send`](/api-reference/overview), which only forwards to the launchpad programs. On Robinhood Chain, submit returns EVM transactions as `{ to, data, value, chainId }` steps that you send from your own wallet.
+
+A launch's create transaction also needs the mint keypair's signature. Submit returns it as `mintSecret`; it has no power beyond that one transaction.
+
+```js
+import { Keypair, VersionedTransaction } from "@solana/web3.js";
+
+const tx = VersionedTransaction.deserialize(Buffer.from(build.transactions[build.createIndex], "base64"));
+tx.sign([creatorKeypair, Keypair.fromSecretKey(bs58.decode(build.mintSecret))]);
+const signed = Buffer.from(tx.serialize()).toString("base64");
+```

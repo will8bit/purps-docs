@@ -1,0 +1,32 @@
+---
+title: "Errors and limits"
+description: "One envelope, plain reasons, honest rate limits."
+---
+
+## Errors
+
+Every failure is `{ "ok": false, "error": "…" }` with a short reason in plain words and a matching HTTP status:
+
+| Status | Meaning |
+| --- | --- |
+| `400` | Something in the request is wrong. The reason says what. |
+| `401` | The signature is invalid or its timestamp is too old. |
+| `403` | The wallet may not do this yet, or the feature is not open. |
+| `404` | The coin, launch or transaction does not exist. |
+| `409` | The action does not fit the coin's state. |
+| `422` | The strategy or its parameters fail validation. |
+| `429` | Too many requests. Wait `Retry-After` seconds. |
+| `503` | We could not reach something we depend on. Retry shortly. |
+
+## Rate limits
+
+Limits are per address and per endpoint, in one-minute windows. Every response carries the standard headers:
+
+```
+RateLimit-Limit: 60
+RateLimit-Remaining: 41
+RateLimit-Reset: 23
+RateLimit-Policy: 60;w=60
+```
+
+A `429` adds `Retry-After`. Each endpoint's limit is on its reference page. Reads are cached at the edge for a few seconds, so two calls in a row can return the same figures; writes are never cached.

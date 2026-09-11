@@ -1,0 +1,23 @@
+---
+title: "Launch on pump.fun"
+description: "A coin on pump.fun's own curve, with its creator fees wired into a strategy from the first trade."
+---
+
+The coin is created on pump.fun with its on-chain creator set to a PURPS-managed wallet, so creator fees flow to the strategy from the start. Two signatures, then a registration.
+
+<Steps>
+  <Step title="Prepare">
+    `POST /pumpfun/prepare` with `name`, `symbol`, `creatorWallet`, and optionally `quoteMint` (from `pumpfun` in `/pairs`; SOL when omitted) and `devBuySol`. Sign `message`.
+  </Step>
+  <Step title="Submit">
+    `POST /pumpfun/submit` with the same terms, the logo, socials, `ts` and `signature`. Sign the returned `transactions` (the one at `createIndex` with the mint key too) and send them through `/transactions/send`.
+  </Step>
+  <Step title="Lock the fee routing">
+    `POST /pumpfun/fees` with `mint` and `creatorWallet`. Sign and send the returned `transaction`. This is pump.fun's fee-sharing config: once set, the coin's creator fees go to its PURPS wallet permanently. `done: true` means it was already set.
+  </Step>
+  <Step title="Register the strategy">
+    `POST /redirects` with `mint` and your strategy `config`. No signature needed: the fee routing you just locked on chain is the proof. The coin is now registered and its strategy runs.
+  </Step>
+</Steps>
+
+The creator wallet needs about 0.04 SOL plus the dev buy (0.045 with a custom pair).

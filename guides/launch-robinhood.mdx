@@ -1,0 +1,24 @@
+---
+title: "Launch on Robinhood Chain"
+description: "A coin on Pons, paired with ETH or a listed token, with its fees running a strategy."
+---
+
+Robinhood Chain is an EVM chain, so there is no relay: you send the transactions from your own wallet and tell us the hash.
+
+<Steps>
+  <Step title="Prepare">
+    `POST /robinhood/launches/prepare` with `name`, `symbol`, `creatorWallet` and optionally `pairToken` (an `address` from `robinhood` in `/pairs`; the zero address or omitted means ETH). Sign `message` with `personal_sign`.
+  </Step>
+  <Step title="Submit">
+    `POST /robinhood/launches/submit` with the same terms, the logo, socials, optionally `devBuy` (ETH, decimal string) and `creatorTaxBps`, plus `ts` and `signature`. Keep `walletKey` from the response.
+  </Step>
+  <Step title="Send the steps">
+    Send each of `steps` from the creator wallet, in order: an optional swap and approval when there is a dev buy in a token pair, then the launch. `requiredWei` tells you what the wallet needs; `shortByWei` is `0` when it has enough.
+  </Step>
+  <Step title="Find the launch">
+    Once the launch transaction has succeeded, `GET /robinhood/launches/{txHash}` returns the token address, and the `walletKey` again if you lost it.
+  </Step>
+  <Step title="Register the strategy">
+    `POST /robinhood/register/prepare` with `creatorWallet` and `txHash`; sign. Then `POST /robinhood/register/submit` with `walletKey`, `name`, `symbol`, `imageUrl`, your strategy `config`, `ts` and `signature`. If `registered` is false with a reason, the launch is not indexed yet: wait a few seconds and retry.
+  </Step>
+</Steps>

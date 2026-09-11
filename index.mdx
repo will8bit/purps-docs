@@ -1,0 +1,48 @@
+---
+title: "PURPS API"
+description: "Everything purps.lol can do, as JSON. No key, no signup."
+---
+
+PURPS is a launchpad where a coin's trading fees work for its holders. Fees are claimed automatically and either buy the coin back and burn it, are airdropped to holders, or fund perpetual futures positions whose profits go to holders.
+
+Everything the site does can be done through this API: read any coin's books, launch a coin on the PURPS launchpad, pump.fun or Robinhood Chain, wire an existing pump.fun coin's fees into a strategy, and trade on a curve.
+
+## Base URL
+
+```
+https://purps.lol/api/v1
+```
+
+## Try it
+
+```bash
+curl "https://purps.lol/api/v1/coins?sort=newest&limit=3"
+```
+
+## The shape of every response
+
+```json
+{ "ok": true,  "data": … }
+{ "ok": false, "error": "coin not found" }
+```
+
+## What you need to know
+
+<CardGroup cols={2}>
+  <Card title="No keys" icon="key" href="/guides/signing">
+    A write is authorised by your own wallet's signature. Every write is a prepare call, a signature, and a submit call.
+  </Card>
+  <Card title="Non-custodial" icon="wallet">
+    We never ask for, accept or store a private key. Transactions are built unsigned and signed in your wallet.
+  </Card>
+  <Card title="Launches finish themselves" icon="rocket" href="/guides/launch-solana">
+    Once your launch transaction lands, we see the pool on chain and mark the coin live within seconds, whether or not your process is still running.
+  </Card>
+  <Card title="Frozen shapes" icon="lock">
+    Fields may be added to v1. None will be renamed or removed.
+  </Card>
+</CardGroup>
+
+## Endpoints
+
+Every endpoint, with its parameters, request body and response, is in the [API reference](/api-reference/overview). The reference is generated from the same source the site uses, so it cannot drift.

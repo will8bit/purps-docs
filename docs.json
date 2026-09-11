@@ -1,0 +1,32 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "PURPS API",
+  "colors": { "primary": "#7C3AED", "light": "#A78BFA", "dark": "#5B21B6" },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "groups": [
+          { "group": "Start here", "pages": ["index", "guides/signing", "guides/errors-and-limits"] },
+          {
+            "group": "Launch",
+            "pages": ["guides/launch-solana", "guides/launch-pumpfun", "guides/launch-robinhood", "guides/redirect"]
+          },
+          { "group": "After launch", "pages": ["guides/manage", "guides/trade"] }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "openapi": "https://purps.lol/api/v1/openapi.json",
+        "groups": [{ "group": "Endpoints", "pages": ["api-reference/overview"] }]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [{ "label": "purps.lol", "href": "https://purps.lol" }],
+    "primary": { "type": "button", "label": "Create a coin", "href": "https://purps.lol/create" }
+  },
+  "footer": { "socials": { "x": "https://x.com/buypurps", "telegram": "https://t.me/buypurps" } }
+}

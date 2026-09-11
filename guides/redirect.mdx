@@ -1,0 +1,20 @@
+---
+title: "Redirect a pump.fun coin"
+description: "Send an existing pump.fun coin's creator fees into a strategy."
+---
+
+Any pump.fun coin whose on-chain creator you are can have its fees redirected. The fees stop going to your wallet and start going to a PURPS-managed wallet that runs the strategy you choose.
+
+<Steps>
+  <Step title="Check the coin">
+    `GET /redirects/{mint}` shows `feeWallet` (where the fees must go), `redirected` (whether they already do) and `registered` (whether a strategy is attached).
+  </Step>
+  <Step title="Route the fees">
+    If not redirected: `POST /pumpfun/fees` with `mint` and `creatorWallet`, sign the returned transaction with the creator wallet, and send it through `/transactions/send`.
+  </Step>
+  <Step title="Register the strategy">
+    `POST /redirects` with `mint` and the strategy `config`. `registered: true` and the coin is live on purps.lol with its strategy running.
+  </Step>
+</Steps>
+
+A registered coin's strategy is fixed through the public API; changes after that are an admin decision.
