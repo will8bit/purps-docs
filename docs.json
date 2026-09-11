@@ -3,37 +3,108 @@
   "theme": "mint",
   "name": "PURPS API",
   "description": "Everything purps.lol can do, as JSON. No key, no signup.",
-  "colors": { "primary": "#3A49B8", "light": "#4757CC", "dark": "#3A49B8" },
-  "background": { "color": { "light": "#F2F1EF", "dark": "#0E0F1A" } },
-  "logo": { "light": "/logo/light.svg", "dark": "/logo/dark.svg", "href": "https://purps.lol" },
+  "colors": {
+    "primary": "#3A49B8",
+    "light": "#4757CC",
+    "dark": "#3A49B8"
+  },
+  "background": {
+    "color": {
+      "light": "#F2F1EF",
+      "dark": "#0E0F1A"
+    }
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://purps.lol"
+  },
   "favicon": "/favicon.svg",
-  "fonts": { "family": "Geist" },
-  "appearance": { "default": "light", "strict": false },
-  "styling": { "codeblocks": "system" },
+  "fonts": {
+    "family": "Geist"
+  },
+  "appearance": {
+    "default": "dark",
+    "strict": false
+  },
+  "styling": {
+    "codeblocks": "system"
+  },
   "navigation": {
     "groups": [
-      { "group": "Start here", "pages": ["index", "guides/signing", "guides/errors-and-limits"] },
-      { "group": "Launch", "pages": ["guides/launch-solana", "guides/launch-pumpfun", "guides/launch-robinhood", "guides/redirect"] },
-      { "group": "After launch", "pages": ["guides/manage", "guides/trade"] },
+      {
+        "group": "Start here",
+        "pages": [
+          "index",
+          "guides/signing",
+          "guides/errors-and-limits"
+        ],
+        "icon": "rocket"
+      },
+      {
+        "group": "Launch",
+        "pages": [
+          "guides/launch-solana",
+          "guides/launch-pumpfun",
+          "guides/launch-robinhood",
+          "guides/redirect"
+        ],
+        "icon": "sparkles"
+      },
+      {
+        "group": "After launch",
+        "pages": [
+          "guides/manage",
+          "guides/trade"
+        ],
+        "icon": "settings-2"
+      },
       {
         "group": "Coins",
         "openapi": "https://purps.lol/api/v1/openapi.json",
-        "pages": ["GET /coins", "GET /coins/{mint}", "GET /index", "GET /search", "GET /launches", "GET /markets", "GET /pairs"]
+        "pages": [
+          "GET /coins",
+          "GET /coins/{mint}",
+          "GET /index",
+          "GET /search",
+          "GET /launches",
+          "GET /markets",
+          "GET /pairs"
+        ],
+        "icon": "coins"
       },
       {
         "group": "Launch on Solana",
         "openapi": "https://purps.lol/api/v1/openapi.json",
-        "pages": ["POST /launches/prepare", "POST /launches/submit", "GET /launches/{mint}", "POST /transactions/send", "GET /transactions/{signature}"]
+        "pages": [
+          "POST /launches/prepare",
+          "POST /launches/submit",
+          "GET /launches/{mint}",
+          "POST /transactions/send",
+          "GET /transactions/{signature}"
+        ],
+        "icon": "sun"
       },
       {
         "group": "Launch on pump.fun",
         "openapi": "https://purps.lol/api/v1/openapi.json",
-        "pages": ["POST /pumpfun/prepare", "POST /pumpfun/submit", "POST /pumpfun/fees", "POST /redirects"]
+        "pages": [
+          "POST /pumpfun/prepare",
+          "POST /pumpfun/submit",
+          "POST /pumpfun/fees",
+          "POST /redirects"
+        ],
+        "icon": "flame"
       },
       {
         "group": "Redirect a pump.fun coin",
         "openapi": "https://purps.lol/api/v1/openapi.json",
-        "pages": ["GET /redirects/{mint}", "POST /pumpfun/fees", "POST /redirects"]
+        "pages": [
+          "GET /redirects/{mint}",
+          "POST /pumpfun/fees",
+          "POST /redirects"
+        ],
+        "icon": "corner-down-right"
       },
       {
         "group": "Launch on Robinhood Chain",
@@ -44,23 +115,66 @@
           "GET /robinhood/launches/{ref}",
           "POST /robinhood/register/prepare",
           "POST /robinhood/register/submit"
-        ]
+        ],
+        "icon": "feather"
       },
       {
         "group": "Manage a coin",
         "openapi": "https://purps.lol/api/v1/openapi.json",
-        "pages": ["POST /coins/{mint}/strategy/prepare", "POST /coins/{mint}/strategy/submit", "POST /coins/{mint}/payout/prepare", "POST /coins/{mint}/payout/submit"]
+        "pages": [
+          "POST /coins/{mint}/strategy/prepare",
+          "POST /coins/{mint}/strategy/submit",
+          "POST /coins/{mint}/payout/prepare",
+          "POST /coins/{mint}/payout/submit"
+        ],
+        "icon": "sliders-horizontal"
       },
       {
         "group": "Trade",
         "openapi": "https://purps.lol/api/v1/openapi.json",
-        "pages": ["POST /trades/solana", "POST /trades/robinhood", "POST /trades/robinhood/record"]
+        "pages": [
+          "POST /trades/solana",
+          "POST /trades/robinhood",
+          "POST /trades/robinhood/record"
+        ],
+        "icon": "arrow-left-right"
       }
-    ]
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "purps.lol",
+          "href": "https://purps.lol",
+          "icon": "globe"
+        },
+        {
+          "anchor": "llms.txt",
+          "href": "https://purps.lol/llms.txt",
+          "icon": "bot"
+        }
+      ]
+    }
   },
   "navbar": {
-    "links": [{ "label": "purps.lol", "href": "https://purps.lol" }],
-    "primary": { "type": "button", "label": "Create a coin", "href": "https://purps.lol/create" }
+    "links": [
+      {
+        "label": "purps.lol",
+        "href": "https://purps.lol"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Create a coin",
+      "href": "https://purps.lol/create"
+    }
   },
-  "footer": { "socials": { "x": "https://x.com/buypurps", "telegram": "https://t.me/buypurps" } }
+  "footer": {
+    "socials": {
+      "x": "https://x.com/buypurps",
+      "telegram": "https://t.me/buypurps"
+    }
+  },
+  "icons": {
+    "library": "lucide"
+  }
 }
