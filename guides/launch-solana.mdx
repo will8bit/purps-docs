@@ -15,8 +15,8 @@ A purps.lol coin trades on a Meteora bonding curve until it raises the equivalen
 | `strategy` | Into a strategy you send with the launch: buybacks, perps, payouts. |
 
 <Steps>
-  <Step title="Pick a pair">
-    `GET /pairs` and take a `mint` from `meteora`. SOL is `So11111111111111111111111111111111111111112`.
+  <Step title="Read the options">
+    `GET /launch-options` gives the fee tiers, the three strategy presets as ready-made config, the airdrop-only config and the payout assets. `GET /pairs` lists the pairs (SOL is `So11111111111111111111111111111111111111112`); `GET /markets` the perp markets and their leverage caps.
   </Step>
   <Step title="Prepare">
     `POST /launches/prepare` with `name`, `symbol`, `quoteMint`, `feePreset`, `creatorWallet` and optionally `devBuySol`, `creatorFeeBps` and `strategy`. Sign `message` with the creator wallet.
@@ -38,4 +38,25 @@ The creator wallet needs about 0.03 SOL plus the dev buy. A dev buy on a non-SOL
 
 ## A strategy launch
 
-With `feePreset: "strategy"`, send a `strategy` object with the terms. It is hashed into the signed message, so it must be sent byte-for-byte the same to submit. The strategy is registered by us the moment the launch goes live; you never come back for a second signature. See the `Strategy` object in the reference for its fields, and `GET /markets` for the perp markets and their leverage caps.
+With `feePreset: "strategy"`, send a `strategy` object with the terms. It is hashed into the signed message, so it must be sent byte-for-byte the same to submit. The strategy is registered by us the moment the launch goes live; you never come back for a second signature.
+
+The site builds that object from a preset plus your choices. Do the same:
+
+```json
+{
+  "splitBuybackBps": 500,
+  "splitMarginBps": 7500,
+  "splitReserveBps": 2000,
+  "strategy": { "preset": "balanced", "tpTriggerPct": 25, "tpSlicePct": 20, "rungCount": 4, "rungMode": "mixed" },
+  "perpLegs": [
+    { "market": "ETH", "direction": "long", "leverage": 3, "weightBps": 10000, "reserveMode": "defensive" }
+  ],
+  "rewardMode": "backed",
+  "payoutMint": "XsDoVfqeBukxuZHWhdvWHBhgnNdt8VXpGkAWZSQ4GDgY"
+}
+```
+
+- The three splits and `strategy` come straight from a preset's `config` in `/launch-options`. Custom values are fine too.
+- `perpLegs` are your pick from `/markets`; weights must sum to 10000 across legs. Use the preset's `legReserveMode` as each leg's `reserveMode`.
+- `rewardMode` decides what profits do: `burn` buys and burns the coin, `holders` airdrops the coin, `backed` airdrops `payoutMint`, a tokenised stock or major from `payoutAssets` or any Solana mint with a real market. `payoutMint2` adds a second asset, half each. Paying coins need `holderPayoutsEnabled` to be true.
+- No perps at all: send the `airdropOnly` config from `/launch-options` and pick the payout the same way.
