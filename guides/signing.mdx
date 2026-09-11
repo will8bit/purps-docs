@@ -57,7 +57,7 @@ Send the 0x-hex signature as returned. The wallet address in the message is lowe
 
 ## Transactions
 
-We never sign a transaction. On Solana, submit returns unsigned transactions as base64; you sign them and send them through [`POST /transactions/send`](/api-reference/overview), which only forwards to the launchpad programs. On Robinhood Chain, submit returns EVM transactions as `{ to, data, value, chainId }` steps that you send from your own wallet.
+We never sign a transaction. On Solana, submit returns unsigned transactions as base64; you sign them and send them through `POST /transactions/send`, which only forwards to the launchpad programs. On Robinhood Chain, submit returns EVM transactions as `{ to, data, value, chainId }` steps that you send from your own wallet.
 
 A launch's create transaction also needs the mint keypair's signature. Submit returns it as `mintSecret`; it has no power beyond that one transaction.
 
