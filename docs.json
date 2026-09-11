@@ -133,9 +133,7 @@
             "openapi": "https://purps.lol/api/v1/openapi.json",
             "pages": [
               "POST /coins/{mint}/strategy/prepare",
-              "POST /coins/{mint}/strategy/submit",
-              "POST /coins/{mint}/payout/prepare",
-              "POST /coins/{mint}/payout/submit"
+              "POST /coins/{mint}/strategy/submit"
             ],
             "icon": "sliders-horizontal"
           },
