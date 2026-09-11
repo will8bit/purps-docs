@@ -8,6 +8,9 @@ icon: "feather"
 Robinhood Chain is an EVM chain, so there is no relay: you send the transactions from your own wallet and tell us the hash.
 
 <Steps>
+  <Step title="Read the options">
+    `GET /launch-options` and look under `venues.robinhood`: who may launch, the creator tax range, and the payout assets holders can be paid in. Pairs are under `robinhood` in `GET /pairs`. A token not in the list can be checked with `GET /robinhood/assets/{address}`.
+  </Step>
   <Step title="Prepare">
     `POST /robinhood/launches/prepare` with `name`, `symbol`, `creatorWallet` and optionally `pairToken` (an `address` from `robinhood` in `/pairs`; the zero address or omitted means ETH). Sign `message` with `personal_sign`.
   </Step>

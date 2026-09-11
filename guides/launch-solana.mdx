@@ -16,7 +16,7 @@ A purps.lol coin trades on a Meteora bonding curve until it raises the equivalen
 
 <Steps>
   <Step title="Read the options">
-    `GET /launch-options` gives the fee tiers, the three strategy presets as ready-made config, the airdrop-only config and the payout assets. `GET /pairs` lists the pairs (SOL is `So11111111111111111111111111111111111111112`); `GET /markets` the perp markets and their leverage caps.
+    `GET /launch-options` and look under `venues.purps`: who may launch, the fee tiers, and the payout assets. The three strategy presets and the airdrop-only config sit at the top level. `GET /pairs` lists the pairs (SOL is `So11111111111111111111111111111111111111112`); `GET /markets` the perp markets and their leverage caps.
   </Step>
   <Step title="Prepare">
     `POST /launches/prepare` with `name`, `symbol`, `quoteMint`, `feePreset`, `creatorWallet` and optionally `devBuySol`, `creatorFeeBps` and `strategy`. Sign `message` with the creator wallet.
@@ -58,5 +58,5 @@ The site builds that object from a preset plus your choices. Do the same:
 
 - The three splits and `strategy` come straight from a preset's `config` in `/launch-options`. Custom values are fine too.
 - `perpLegs` are your pick from `/markets`; weights must sum to 10000 across legs. Use the preset's `legReserveMode` as each leg's `reserveMode`.
-- `rewardMode` decides what profits do: `burn` buys and burns the coin, `holders` airdrops the coin, `backed` airdrops `payoutMint`, a tokenised stock or major from `payoutAssets` or any Solana mint with a real market. `payoutMint2` adds a second asset, half each. Paying coins need `holderPayoutsEnabled` to be true.
+- `rewardMode` decides what profits do: `burn` buys and burns the coin, `holders` airdrops the coin, `backed` airdrops `payoutMint`, a tokenised stock or major from the venue's `payoutAssets` or any Solana mint with a real market. `payoutMint2` adds a second asset, half each. Paying coins need `holderPayoutsEnabled` to be true.
 - No perps at all: send the `airdropOnly` config from `/launch-options` and pick the payout the same way.

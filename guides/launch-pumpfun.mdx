@@ -8,6 +8,9 @@ icon: "flame"
 The coin is created on pump.fun with its on-chain creator set to a PURPS-managed wallet, so creator fees flow to the strategy from the start. Two signatures, then a registration.
 
 <Steps>
+  <Step title="Read the options">
+    `GET /launch-options` and look under `venues.pumpfun`: who may launch, who may use a custom pair, and the payout assets. Pairs are under `pumpfun` in `GET /pairs`.
+  </Step>
   <Step title="Prepare">
     `POST /pumpfun/prepare` with `name`, `symbol`, `creatorWallet`, and optionally `quoteMint` (from `pumpfun` in `/pairs`; SOL when omitted) and `devBuySol`. Sign `message`.
   </Step>
