@@ -102,7 +102,9 @@
               "POST /pumpfun/prepare",
               "POST /pumpfun/submit",
               "POST /pumpfun/fees",
-              "POST /redirects"
+              "POST /redirects",
+              "POST /transactions/send",
+              "GET /transactions/{signature}"
             ],
             "icon": "flame"
           },
@@ -112,7 +114,9 @@
             "pages": [
               "GET /redirects/{mint}",
               "POST /pumpfun/fees",
-              "POST /redirects"
+              "POST /redirects",
+              "POST /transactions/send",
+              "GET /transactions/{signature}"
             ],
             "icon": "corner-down-right"
           },

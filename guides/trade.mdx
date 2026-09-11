@@ -7,7 +7,7 @@ icon: "arrow-left-right"
 
 ## Solana
 
-`POST /trades/solana` with `mint`, `side`, `owner` and either `amountQuote` (a buy, in the pair token) or `amountTokenRaw` (a sell, raw token units as a string). Set `viaSol: true` to pay or receive SOL on a non-SOL pair; the trade is routed through Jupiter.
+`POST /trades/solana` with `mint`, `side`, `owner` and either `amountQuote` (a buy: how much of the pair token to spend, e.g. `0.5` for half a SOL) or `amountTokenRaw` (a sell: how many tokens, in raw units as a string; purps.lol coins have 6 decimals, so `1000000` is one token). Set `viaSol: true` to pay or receive SOL on a non-SOL pair; the trade is routed through Jupiter.
 
 The transaction is simulated before it is returned, so a trade that would fail comes back as a plain error rather than a wallet warning. Sign it and send it through `POST /transactions/send`.
 
@@ -17,4 +17,4 @@ Only live purps.lol coins trade here. A graduated coin trades on its pool throug
 
 `POST /trades/robinhood` with `token`, `side`, `owner`, `amount` and optionally `slippageBps` and `payWith: "eth"`. The coin trades on its curve until graduation and on its Uniswap pool after; the response says which with `route`, and quotes `out` and `minOut`.
 
-Send each of `steps` from your wallet, in order. They include any approvals, the trade, and purps.lol's 1% fee as a final transfer. Then `POST /trades/robinhood/record` with `feeTicket` and the trade's hash so it shows on the coin page.
+Send each of `steps` from your wallet, in order, waiting for each receipt, as shown on the Robinhood Chain launch page. They include any approvals, the trade, and purps.lol's 1% fee as a final transfer. Then `POST /trades/robinhood/record` with `feeTicket` and the trade's hash so it shows on the coin page.

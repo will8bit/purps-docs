@@ -5,7 +5,7 @@ description: "A coin on pump.fun's own curve, with its creator fees wired into a
 icon: "flame"
 ---
 
-The coin is created on pump.fun with its on-chain creator set to a PURPS-managed wallet, so creator fees flow to the strategy from the start. Two signatures, then a registration.
+The coin is created on pump.fun with its on-chain creator set to the coin's PURPS wallet, so creator fees flow to the strategy from the start. Two signed transactions, then a registration. The complete example on the purps.lol page applies here with the paths changed.
 
 <Steps>
   <Step title="Read the options">
@@ -15,13 +15,13 @@ The coin is created on pump.fun with its on-chain creator set to a PURPS-managed
     `POST /pumpfun/prepare` with `name`, `symbol`, `creatorWallet`, and optionally `quoteMint` (from `pumpfun` in `/pairs`; SOL when omitted) and `devBuySol`. Sign `message`.
   </Step>
   <Step title="Submit">
-    `POST /pumpfun/submit` with the same terms, the logo, socials, `ts` and `signature`. Sign the returned `transactions` (the one at `createIndex` with the mint key too) and send them through `/transactions/send`.
+    `POST /pumpfun/submit` with the same terms, the logo, socials, `ts` and `signature`. Sign the returned `transactions` (the one at `createIndex` with the mint key too) and send them through `/transactions/send`, one at a time, waiting for each to confirm.
   </Step>
   <Step title="Lock the fee routing">
-    `POST /pumpfun/fees` with `mint` and `creatorWallet`. Sign and send the returned `transaction`. This is pump.fun's fee-sharing config: once set, the coin's creator fees go to its PURPS wallet permanently. `done: true` means it was already set.
+    Once the create has confirmed: `POST /pumpfun/fees` with `mint` and `creatorWallet`. Sign and send the returned `transaction` the same way. This is pump.fun's fee-sharing config: once set, the coin's creator fees go to its PURPS wallet permanently. `done: true` means it was already set.
   </Step>
   <Step title="Register the strategy">
-    `POST /redirects` with `mint` and your strategy `config`. No signature needed: the fee routing you just locked on chain is the proof. The coin is now registered and its strategy runs.
+    `POST /redirects` with `mint` and your strategy `config`, built as on the purps.lol page. No signature needed: the fee routing you just locked on chain is the proof. If it answers `registered: false`, the chain has not shown us the routing yet: wait a few seconds and call it again. `registered: true` and the coin is live on purps.lol with its strategy running.
   </Step>
 </Steps>
 

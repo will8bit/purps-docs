@@ -14,6 +14,8 @@ A purps.lol coin trades on a Meteora bonding curve until it raises the equivalen
 | `creator` | All to you, claimable on Meteora. No strategy can be attached later. |
 | `strategy` | Into a strategy you send with the launch: buybacks, perps, payouts. |
 
+On top of the platform's 1%, you set your own creator fee with `creatorFeeBps`: 0.5% to 10% of curve volume, 1% by default. That is the fee the preset above routes.
+
 <Steps>
   <Step title="Read the options">
     `GET /launch-options` and look under `venues.purps`: who may launch, the fee tiers, and the payout assets. The three strategy presets and the airdrop-only config sit at the top level. `GET /pairs` lists the pairs (SOL is `So11111111111111111111111111111111111111112`); `GET /markets` the perp markets and their leverage caps.
@@ -25,10 +27,10 @@ A purps.lol coin trades on a Meteora bonding curve until it raises the equivalen
     `POST /launches/submit` with the same terms, the logo (`imageUrl` or `image`), socials, `ts` and `signature`. We upload the metadata, build the transactions and record the launch as pending.
   </Step>
   <Step title="Sign and send">
-    Sign each of `transactions` with the creator wallet, and the one at `createIndex` with the mint keypair from `mintSecret` as well. `POST /transactions/send` each in order. If `confirmed` is false, poll `GET /transactions/{signature}`.
+    Sign each of `transactions` with the creator wallet, and the one at `createIndex` with the mint keypair from `mintSecret` as well. `POST /transactions/send` them one at a time, in order, waiting for each to confirm before the next: when the pair is not SOL and there is a dev buy, the first transaction is a swap the launch spends. If `confirmed` is false, poll `GET /transactions/{signature}` until it is.
   </Step>
   <Step title="Wait for live">
-    Poll `GET /launches/{mint}` until `status` is `live`. We watch the chain and flip it within seconds of the pool appearing. You do not need to stay online; if your process dies after sending, the launch still completes.
+    Poll `GET /launches/{mint}` every few seconds until `status` is `live`, usually within half a minute of the create confirming. We watch the chain and flip it ourselves; you do not need to stay online, and if your process dies after sending, the launch still completes. A launch whose transaction never lands turns `failed` with a `failureReason` after an hour.
   </Step>
 </Steps>
 
@@ -60,3 +62,79 @@ The site builds that object from a preset plus your choices. Do the same:
 - `perpLegs` are your pick from `/markets`; weights must sum to 10000 across legs. Use the preset's `legReserveMode` as each leg's `reserveMode`.
 - `rewardMode` decides what profits do: `burn` buys and burns the coin, `holders` airdrops the coin, `backed` airdrops `payoutMint`, a tokenised stock or major from the venue's `payoutAssets` or any Solana mint with a real market. `payoutMint2` adds a second asset, half each. Paying coins need `holderPayoutsEnabled` to be true.
 - No perps at all: send the `airdropOnly` config from `/launch-options` and pick the payout the same way.
+
+<Note>
+`feePreset: "airdrop"` and the `airdropOnly` strategy are different things. The `airdrop` preset pays holders straight from the curve's fees, in the pair token, with no strategy at all. The `airdropOnly` config is a `strategy` launch with no perps: every fee buys the coin, or the backed asset you name, and airdrops that.
+</Note>
+
+## A complete example
+
+Node 20+, `npm i @solana/web3.js tweetnacl bs58`. Launches a coin paired with SOL that airdrops its fees to holders, from a keypair file.
+
+```js launch.mjs
+import fs from "node:fs";
+import { Keypair, VersionedTransaction } from "@solana/web3.js";
+import nacl from "tweetnacl";
+import bs58 from "bs58";
+
+const API = "https://purps.lol/api/v1";
+const creator = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync("creator.json", "utf8"))));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function call(path, body) {
+  const res = await fetch(API + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : undefined);
+  const json = await res.json();
+  if (!json.ok) throw new Error(`${path}: ${json.error}`);
+  return json.data;
+}
+
+// 1. the terms, signed
+const terms = {
+  name: "My Coin",
+  symbol: "MINE",
+  quoteMint: "So11111111111111111111111111111111111111112",
+  feePreset: "airdrop",
+  devBuySol: 0.1,
+  creatorWallet: creator.publicKey.toBase58(),
+};
+const { ts, message } = await call("/launches/prepare", terms);
+const signature = bs58.encode(nacl.sign.detached(new TextEncoder().encode(message), creator.secretKey));
+
+// 2. build
+const build = await call("/launches/submit", {
+  ...terms,
+  ts,
+  signature,
+  imageUrl: "https://example.com/my-coin.png",
+  description: "Fees go to holders.",
+  twitter: "https://x.com/mycoin",
+});
+console.log("mint", build.mint);
+
+// 3. sign and send, one at a time
+const mintKey = Keypair.fromSecretKey(bs58.decode(build.mintSecret));
+for (const [i, b64] of build.transactions.entries()) {
+  const tx = VersionedTransaction.deserialize(Buffer.from(b64, "base64"));
+  tx.sign(i === build.createIndex ? [creator, mintKey] : [creator]);
+  let { signature: sig, confirmed } = await call("/transactions/send", { transaction: Buffer.from(tx.serialize()).toString("base64") });
+  while (!confirmed) {
+    await sleep(2000);
+    const st = await call(`/transactions/${sig}`);
+    if (st.failed) throw new Error(`transaction ${sig} failed on chain`);
+    confirmed = st.confirmed;
+  }
+  console.log("landed", sig);
+}
+
+// 4. wait for live
+for (;;) {
+  const launch = await call(`/launches/${build.mint}`);
+  if (launch.status === "live") break;
+  if (launch.status === "failed") throw new Error(launch.failureReason);
+  await sleep(3000);
+}
+console.log("live at", build.url);
+```
+
+For a strategy launch, set `feePreset: "strategy"` and add the `strategy` object from the section above to `terms` before prepare; it is part of what you sign.
+
