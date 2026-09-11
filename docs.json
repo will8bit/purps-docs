@@ -58,8 +58,7 @@
           {
             "group": "After launch",
             "pages": [
-              "guides/manage",
-              "guides/trade"
+              "guides/manage"
             ],
             "icon": "settings-2"
           }
@@ -140,16 +139,6 @@
               "POST /coins/{mint}/strategy/submit"
             ],
             "icon": "sliders-horizontal"
-          },
-          {
-            "group": "Trade",
-            "openapi": "https://purps.lol/api/v1/openapi.json",
-            "pages": [
-              "POST /trades/solana",
-              "POST /trades/robinhood",
-              "POST /trades/robinhood/record"
-            ],
-            "icon": "arrow-left-right"
           }
         ]
       }
