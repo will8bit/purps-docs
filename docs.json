@@ -86,6 +86,7 @@
             "group": "Launch on purps.lol",
             "openapi": "https://purps.lol/api/v1/openapi.json",
             "pages": [
+              "GET /launch-options",
               "POST /launches/prepare",
               "POST /launches/submit",
               "GET /launches/{mint}",
@@ -125,6 +126,7 @@
             "pages": [
               "POST /robinhood/launches/prepare",
               "POST /robinhood/launches/submit",
+              "GET /robinhood/assets/{address}",
               "GET /robinhood/launches/{ref}",
               "POST /robinhood/register/prepare",
               "POST /robinhood/register/submit"

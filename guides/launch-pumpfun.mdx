@@ -21,7 +21,7 @@ The coin is created on pump.fun with its on-chain creator set to the coin's PURP
     Once the create has confirmed: `POST /pumpfun/fees` with `mint` and `creatorWallet`. Sign and send the returned `transaction` the same way. This is pump.fun's fee-sharing config: once set, the coin's creator fees go to its PURPS wallet permanently. `done: true` means it was already set.
   </Step>
   <Step title="Register the strategy">
-    `POST /redirects` with `mint` and your strategy `config`, built as on the purps.lol page. No signature needed: the fee routing you just locked on chain is the proof. If it answers `registered: false`, the chain has not shown us the routing yet: wait a few seconds and call it again. `registered: true` and the coin is live on purps.lol with its strategy running.
+    `POST /redirects` with `mint` and your strategy `config`, built as on the purps.lol page and in the same shape as a Solana strategy launch, `payoutMint` and up to four `payoutMintsExtra` included. No signature needed: the fee routing you just locked on chain is the proof. If it answers `registered: false`, the chain has not shown us the routing yet: wait a few seconds and call it again. `registered: true` and the coin is live on purps.lol with its strategy running.
   </Step>
 </Steps>
 

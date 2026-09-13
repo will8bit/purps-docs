@@ -24,7 +24,7 @@ Robinhood Chain is an EVM chain, so there is no relay: you send the transactions
     Once the launch transaction has succeeded, `GET /robinhood/launches/{txHash}` returns the token address, and the `walletKey` again if you lost it.
   </Step>
   <Step title="Register the strategy">
-    `POST /robinhood/register/prepare` with `creatorWallet` and `txHash`; sign. Then `POST /robinhood/register/submit` with `walletKey`, `name`, `symbol`, `imageUrl`, your strategy `config`, `ts` and `signature`. If `registered` is false with a reason, the launch is not indexed yet: wait a few seconds and retry.
+    `POST /robinhood/register/prepare` with `creatorWallet` and `txHash`; sign. Then `POST /robinhood/register/submit` with `walletKey`, `name`, `symbol`, `imageUrl`, your strategy `config`, `ts` and `signature`. If `registered` is false with a reason, the launch is not indexed yet: wait a few seconds and retry. The `config` is the same shape as a Solana strategy launch: a paying coin names its asset in `payoutMint` and up to four more in `payoutMintsExtra`, each a `0x` address from the venue's `payoutAssets` or any token `GET /robinhood/assets/{address}` says is payable.
   </Step>
 </Steps>
 
