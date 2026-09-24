@@ -1,0 +1,4892 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PURPS API",
+    "version": "2.0.0",
+    "description": "Everything purps.lol can do, as JSON. Read the coin list, a coin's full page and the launchpad; launch coins on purps.lol, pump.fun and Robinhood Chain; wire an existing pump.fun coin's fees into a strategy; steer a coin you own. No key, no signup. A launch is one call that returns unsigned transactions: the launch transaction can only land with your wallet's signature, and that is the proof. The few writes that need a message signature (Robinhood Chain launches, wiring a strategy onto a coin, creator authority) come as a prepare/submit pair. Every transaction is signed in your wallet, never by us. Every response is `{ ok: true, data }` or `{ ok: false, error }`. Cross-origin requests are allowed from any site. Cacheable reads carry `RateLimit-Limit` and `RateLimit-Policy`; uncached responses (writes, prepare and submit, refusals) carry `RateLimit-Remaining` and `RateLimit-Reset` as well."
+  },
+  "servers": [
+    {
+      "url": "https://purps.lol/api/v2"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Coins",
+      "description": "Read what the site shows."
+    },
+    {
+      "name": "Launch on purps.lol",
+      "description": "Launch a coin on purps.lol. Build, sign, send, poll."
+    },
+    {
+      "name": "Launch on pump.fun",
+      "description": "Launch straight on pump.fun with fees wired to a strategy."
+    },
+    {
+      "name": "Launch on Robinhood Chain",
+      "description": "Launch through Pons on Robinhood Chain."
+    },
+    {
+      "name": "Redirect a pump.fun coin",
+      "description": "Point an existing pump.fun coin's creator fees at a strategy."
+    },
+    {
+      "name": "Manage a coin",
+      "description": "Attach a strategy to a coin launched without one. Creator-signed."
+    },
+    {
+      "name": "Creator authority",
+      "description": "Steer a purps.lol coin you own: act on a position, change its strategy, ask for authority, or hand the coin on. Every move is signed by the owner's wallet and published on the coin's Changes tab."
+    },
+    {
+      "name": "Transactions",
+      "description": "Send a signed Solana transaction through our relay and watch it land."
+    }
+  ],
+  "paths": {
+    "/coins": {
+      "get": {
+        "tags": [
+          "Coins"
+        ],
+        "operationId": "listCoins",
+        "summary": "List coins",
+        "description": "Every visible coin on the platform, one page at a time, with market data. The same list the /coins page draws, in the same order. Fifty a page at most; to get every coin's identity in one call, use /index instead of paging. An unknown parameter or value is a 400, not a silent default.",
+        "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Order of the list: market cap, perp earnings, tokens burned, fees claimed, bought back, open positions, holder count, reserve balance, paid to holders, or newest first.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mcap",
+                "earnings",
+                "burned",
+                "fees",
+                "buyback",
+                "active",
+                "holders",
+                "reserve",
+                "paid",
+                "newest"
+              ],
+              "default": "mcap"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "description": "Which end of the sort comes first: `desc` (largest or newest first) or `asc`. Coins with no figure for the sort sit last either way.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "desc",
+                "asc"
+              ],
+              "default": "desc"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "How many coins to skip.",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size.",
+            "schema": {
+              "type": "integer",
+              "default": 25,
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "description": "Keep only coins that match every listed fact, comma-separated: `holders` pays its holders, `live` has an open perp position, `earning` is in profit, `strategy` runs a strategy at all.",
+            "schema": {
+              "type": "string",
+              "example": "holders,live"
+            }
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "description": "Where the coin was born: our launchpad, pump.fun through this site, or a coin that was redirected here.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "launchpad",
+                "pumpfun",
+                "redirects"
+              ]
+            }
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "description": "Which chain.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "both",
+                "solana",
+                "robinhood"
+              ],
+              "default": "both"
+            }
+          },
+          {
+            "name": "market",
+            "in": "query",
+            "description": "Only coins whose strategy bets on this perp market, by symbol. The response's `markets` lists every symbol in use.",
+            "schema": {
+              "type": "string",
+              "example": "BTC"
+            }
+          },
+          {
+            "name": "side",
+            "in": "query",
+            "description": "Only coins with a long, or a short, leg.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "long",
+                "short"
+              ]
+            }
+          },
+          {
+            "name": "mcap",
+            "in": "query",
+            "description": "A market-cap band in USD. Coins with no known cap are left out.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "under10k",
+                "10k-100k",
+                "100k-1m",
+                "over1m"
+              ]
+            }
+          },
+          {
+            "name": "holders",
+            "in": "query",
+            "description": "The fewest wallets the coin must have. Coins not yet counted are left out.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "10",
+                "100",
+                "1000"
+              ]
+            }
+          },
+          {
+            "name": "age",
+            "in": "query",
+            "description": "Only coins created within the window.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "24h",
+                "7d",
+                "30d"
+              ]
+            }
+          }
+        ],
+        "x-rate-limit": "60 a minute",
+        "x-cache": "10 seconds",
+        "x-example": "/coins?sort=newest&limit=5",
+        "responses": {
+          "200": {
+            "description": "A page of coins.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CoinPage"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coins/{mint}": {
+      "get": {
+        "tags": [
+          "Coins"
+        ],
+        "operationId": "getCoin",
+        "summary": "One coin",
+        "description": "Everything the coin page shows: identity, market cap, holders, links, the strategy it runs, its books, open perp positions, the last 40 events on its timeline and its launch if it came from purps.lol.",
+        "parameters": [
+          {
+            "name": "mint",
+            "in": "path",
+            "required": true,
+            "description": "The token's mint address (Solana) or contract address (Robinhood Chain).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-rate-limit": "30 a minute",
+        "x-cache": "5 seconds",
+        "x-example": "/coins/{mint}",
+        "responses": {
+          "200": {
+            "description": "The coin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Coin"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/index": {
+      "get": {
+        "tags": [
+          "Coins"
+        ],
+        "operationId": "listIndex",
+        "summary": "Flat index",
+        "description": "Every coin's identity in one list, no market data. For indexers and agents that want the whole set in one call.",
+        "x-rate-limit": "60 a minute",
+        "x-cache": "60 seconds",
+        "x-example": "/index",
+        "responses": {
+          "200": {
+            "description": "Every coin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CoinRef"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "tags": [
+          "Coins"
+        ],
+        "operationId": "searchCoins",
+        "summary": "Search",
+        "description": "Find coins by ticker, name or the start of a mint address. Up to 8 hits, best first.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "At least two characters.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-rate-limit": "60 a minute",
+        "x-cache": "10 seconds",
+        "x-example": "/search?q=purps",
+        "responses": {
+          "200": {
+            "description": "The hits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CoinRef"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/launches": {
+      "get": {
+        "tags": [
+          "Coins"
+        ],
+        "operationId": "listLaunches",
+        "summary": "Coins launched on purps.lol",
+        "description": "Coins launched on purps.lol, newest first, with curve progress, what they raised and what they have paid holders. Filter by status, venue or pair; page with limit and offset. The `X-Total-Count` response header carries the size of the whole filtered set. An unknown parameter or value is a 400, not a silent default.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "`live` for coins still on their curve, `migrated` for graduated ones. Both when omitted.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "live",
+                "migrated"
+              ]
+            }
+          },
+          {
+            "name": "venue",
+            "in": "query",
+            "description": "The curve venue.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "dbc",
+                "launchlab"
+              ]
+            }
+          },
+          {
+            "name": "quoteMint",
+            "in": "query",
+            "description": "Only launches paired with this token, e.g. SOL or a stock mint from /pairs.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size.",
+            "schema": {
+              "type": "integer",
+              "default": 60,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "How many launches to skip.",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          }
+        ],
+        "x-rate-limit": "60 a minute",
+        "x-cache": "5 seconds",
+        "x-example": "/launches",
+        "responses": {
+          "200": {
+            "description": "The launches, newest first. The `X-Total-Count` header is the whole filtered set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Launch"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Launch on purps.lol"
+        ],
+        "operationId": "buildLaunch",
+        "summary": "Build a purps.lol launch",
+        "description": "One call, no message to sign. Send the launch's terms, the coin's image and socials. We upload the metadata, build the launch transaction (and a SOL-to-pair swap in front of it when the pair is not SOL and there is a dev buy), simulate it, and record the launch as pending. You get back unsigned transactions and the throwaway mint key. The launch transaction can only land with the creator wallet's signature, and that is the proof: sign each transaction with the creator wallet, and the one at `createIndex` with the mint key as well, then send them in order through /transactions/send. The launch goes live on its own once the pool exists on chain; poll /launches/{mint}. A wallet the launchpad does not admit is refused with a 403 before anything is uploaded; a wallet that cannot afford the launch (about 0.03 SOL plus the dev buy) with a 400. `imageUrl` fetches are budgeted (20 an hour per address, 200 an hour site-wide); a 429 naming image fetches means send `image` as a data URL instead.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LaunchBuild"
+              }
+            }
+          }
+        },
+        "x-rate-limit": "10 a minute",
+        "x-cache": "none",
+        "x-flow": "launch-solana",
+        "x-example": "/launches",
+        "responses": {
+          "200": {
+            "description": "The transactions to sign.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SolanaBuild"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/markets": {
+      "get": {
+        "tags": [
+          "Coins"
+        ],
+        "operationId": "listMarkets",
+        "summary": "Perp markets",
+        "description": "The perpetual futures markets a strategy can hold, with each one's leverage cap. A strategy's `perpLegs` must name markets from this list and stay within the cap.",
+        "x-rate-limit": "60 a minute",
+        "x-cache": "30 seconds",
+        "x-example": "/markets",
+        "responses": {
+          "200": {
+            "description": "The markets.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Market"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pairs": {
+      "get": {
+        "tags": [
+          "Coins"
+        ],
+        "operationId": "listPairs",
+        "summary": "Launch pairs",
+        "description": "The tokens a new coin can be paired with, per venue: `meteora` for purps.lol, `pumpfun` for pump.fun, `robinhood` for Pons. A launch names one of these as its quote.",
+        "x-rate-limit": "60 a minute",
+        "x-cache": "60 seconds",
+        "x-example": "/pairs",
+        "responses": {
+          "200": {
+            "description": "The pairs by venue.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Pairs"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/launch-options": {
+      "get": {
+        "tags": [
+          "Launch on purps.lol"
+        ],
+        "operationId": "getLaunchOptions",
+        "summary": "Launch options",
+        "description": "Everything the create page knows before a launch is built, venue by venue: who may launch there right now, where its pairs are listed, which fee presets it takes, its fee terms, and what holders can be paid in. Plus the three strategy presets exactly as the site turns them into a config, and the airdrop-only config. Read this once, then pick a pair from /pairs and markets from /markets.",
+        "x-rate-limit": "60 a minute",
+        "x-cache": "10 seconds",
+        "x-flow": "launch-solana",
+        "x-example": "/launch-options",
+        "responses": {
+          "200": {
+            "description": "The options.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/LaunchOptions"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/launches/{mint}": {
+      "get": {
+        "tags": [
+          "Launch on purps.lol"
+        ],
+        "operationId": "getLaunch",
+        "summary": "Launch status",
+        "description": "Where a launch is: `pending` until its pool is seen on chain, then `live`, `migrated` once it graduates, or `failed` if it never landed. Poll this after sending.",
+        "parameters": [
+          {
+            "name": "mint",
+            "in": "path",
+            "required": true,
+            "description": "The token's mint address (Solana) or contract address (Robinhood Chain).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-rate-limit": "120 a minute",
+        "x-cache": "3 seconds",
+        "x-flow": "launch-solana",
+        "x-example": "/launches/{mint}",
+        "responses": {
+          "200": {
+            "description": "The launch.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/LaunchStatus"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pumpfun/launches": {
+      "post": {
+        "tags": [
+          "Launch on pump.fun"
+        ],
+        "operationId": "buildPumpLaunch",
+        "summary": "Build a pump.fun launch",
+        "description": "One call, no message to sign. Builds the pump.fun create transaction with the coin's creator fees already pointed at the coin's PURPS wallet; the create transaction is the proof. Sign with the creator wallet and the mint key, send through /transactions/send, then call /pumpfun/fees to lock the fee routing and /redirects to attach the strategy. The creator wallet needs about 0.04 SOL plus the dev buy (0.045 with a custom pair) or the build is refused with a 400; a wallet the venue does not admit gets a 403. `imageUrl` fetches are budgeted (20 an hour per address, 200 an hour site-wide); a 429 naming image fetches means send `image` as a data URL instead.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PumpLaunchBuild"
+              }
+            }
+          }
+        },
+        "x-rate-limit": "10 a minute",
+        "x-cache": "none",
+        "x-flow": "launch-pumpfun",
+        "x-example": "/pumpfun/launches",
+        "responses": {
+          "200": {
+            "description": "The transactions to sign.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SolanaBuild"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pumpfun/fees": {
+      "post": {
+        "tags": [
+          "Launch on pump.fun"
+        ],
+        "operationId": "pumpFeeRouting",
+        "summary": "Lock fee routing",
+        "description": "Step 3 for a pump.fun coin, and the first step for redirecting one you already own. Builds pump.fun's fee-sharing transaction that sends the coin's creator fees to its PURPS wallet permanently. Only the coin's on-chain creator can sign it. `done: true` means it is already in place.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PumpFees"
+              }
+            }
+          }
+        },
+        "x-rate-limit": "30 a minute",
+        "x-cache": "none",
+        "x-flow": "launch-pumpfun",
+        "x-example": "/pumpfun/fees",
+        "responses": {
+          "200": {
+            "description": "The transaction, or done.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/FeeRouting"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/redirects/{mint}": {
+      "get": {
+        "tags": [
+          "Redirect a pump.fun coin"
+        ],
+        "operationId": "getRedirect",
+        "summary": "Check a pump.fun coin",
+        "description": "Whether a pump.fun coin's creator fees already point at its PURPS wallet, who its creator is, and whether it is registered here. `feeWallet` is the address its fees must go to.",
+        "parameters": [
+          {
+            "name": "mint",
+            "in": "path",
+            "required": true,
+            "description": "The token's mint address (Solana) or contract address (Robinhood Chain).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-rate-limit": "10 a minute",
+        "x-cache": "30 seconds",
+        "x-flow": "redirect",
+        "x-example": "/redirects/{mint}",
+        "responses": {
+          "200": {
+            "description": "The coin's fee status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Redirect"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/redirects": {
+      "post": {
+        "tags": [
+          "Redirect a pump.fun coin"
+        ],
+        "operationId": "submitRedirect",
+        "summary": "Register the strategy",
+        "description": "Once a pump.fun coin's fees point at its PURPS wallet, this registers the strategy that will run on them. No signature: the on-chain fee routing is the proof of authority. `registered: false` with a `feeWallet` means the fees are not routed yet, or the chain has not shown us the routing yet: wait a few seconds and call again.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedirectSubmit"
+              }
+            }
+          }
+        },
+        "x-rate-limit": "10 a minute",
+        "x-cache": "none",
+        "x-flow": "redirect",
+        "x-example": "/redirects",
+        "responses": {
+          "200": {
+            "description": "Registered, or what is missing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RedirectResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/robinhood/launches/prepare": {
+      "post": {
+        "tags": [
+          "Launch on Robinhood Chain"
+        ],
+        "operationId": "prepareRobinhoodLaunch",
+        "summary": "Prepare a Robinhood Chain launch",
+        "description": "Step 1: the message to sign with your EVM wallet (`personal_sign`, EIP-191). Robinhood Chain is the one venue that still signs a message before the build, because launching there is invite-only and the signature is how the invite is checked before anything is spent. The message carries a `launches:` line that spells the launch out in words: name, ticker, pair, creator tax and first buy. Send `devBuy` and `creatorTaxBps` here too when you will send them to submit; they are part of those words.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RobinhoodTerms"
+              }
+            }
+          }
+        },
+        "x-rate-limit": "30 a minute",
+        "x-cache": "none",
+        "x-flow": "launch-robinhood",
+        "x-example": "/robinhood/launches/prepare",
+        "responses": {
+          "200": {
+            "description": "What to sign.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Prepared"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/robinhood/launches/submit": {
+      "post": {
+        "tags": [
+          "Launch on Robinhood Chain"
+        ],
+        "operationId": "submitRobinhoodLaunch",
+        "summary": "Build the Robinhood Chain launch",
+        "description": "Step 2. Returns the EVM transactions to send from the creator wallet, in order: an optional swap and approval when there is a dev buy in a token pair, then the launch itself. You send these yourself (there is no relay on Robinhood Chain). Then call /robinhood/launches/{ref} with the launch transaction hash and register the strategy.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RobinhoodSubmit"
+              }
+            }
+          }
+        },
+        "x-rate-limit": "4 a minute",
+        "x-cache": "none",
+        "x-flow": "launch-robinhood",
+        "x-example": "/robinhood/launches/submit",
+        "responses": {
+          "200": {
+            "description": "The steps to send.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RobinhoodBuild"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/robinhood/launches/{ref}": {
+      "get": {
+        "tags": [
+          "Launch on Robinhood Chain"
+        ],
+        "operationId": "getRobinhoodLaunch",
+        "summary": "Find a Robinhood Chain launch",
+        "description": "Resolve a launch by its transaction hash or the token address it created: the token, the creator, the `walletKey` the register step needs, and whether it is registered.",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "description": "The launch transaction hash (0x…64 hex) or the token address.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-rate-limit": "30 a minute",
+        "x-cache": "none",
+        "x-flow": "launch-robinhood",
+        "x-example": "/robinhood/launches/{ref}",
+        "responses": {
+          "200": {
+            "description": "The launch.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RobinhoodLaunch"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/robinhood/assets/{address}": {
+      "get": {
+        "tags": [
+          "Launch on Robinhood Chain"
+        ],
+        "operationId": "getRobinhoodAsset",
+        "summary": "Check a Robinhood Chain payout asset",
+        "description": "Whether a token on Robinhood Chain can be paid out to holders, the way the create page checks a token pasted in by address: it must have a real Uniswap pool. Use the returned `address` as `payoutMint` in a Robinhood Chain strategy. The catalogue assets are in /pairs under `robinhood` with `payable`.",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "description": "The token's contract address.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-rate-limit": "60 a minute",
+        "x-cache": "60 seconds",
+        "x-flow": "launch-robinhood",
+        "x-example": "/robinhood/assets/{address}",
+        "responses": {
+          "200": {
+            "description": "The asset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RobinhoodAsset"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/robinhood/register/prepare": {
+      "post": {
+        "tags": [
+          "Launch on Robinhood Chain"
+        ],
+        "operationId": "prepareRobinhoodRegister",
+        "summary": "Prepare the registration",
+        "description": "The message to sign to attach a strategy to a Robinhood Chain launch you sent.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RobinhoodRegisterTerms"
+              }
+            }
+          }
+        },
+        "x-rate-limit": "30 a minute",
+        "x-cache": "none",
+        "x-flow": "launch-robinhood",
+        "x-example": "/robinhood/register/prepare",
+        "responses": {
+          "200": {
+            "description": "What to sign.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Prepared"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/robinhood/register/submit": {
+      "post": {
+        "tags": [
+          "Launch on Robinhood Chain"
+        ],
+        "operationId": "submitRobinhoodRegister",
+        "summary": "Register the strategy",
+        "description": "Attach the strategy to the launched coin. `registered: false` with a `reason` means the launch is not confirmed or indexed yet; wait and retry. `dropped: true` means the chain has no record of the transaction at all. A 503 means a payout asset could not be checked just now; try again in a moment.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RobinhoodRegisterSubmit"
+              }
+            }
+          }
+        },
+        "x-rate-limit": "10 a minute",
+        "x-cache": "none",
+        "x-flow": "launch-robinhood",
+        "x-example": "/robinhood/register/submit",
+        "responses": {
+          "200": {
+            "description": "Registered, or why not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RobinhoodRegisterResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coins/{mint}/strategy/prepare": {
+      "post": {
+        "tags": [
+          "Manage a coin"
+        ],
+        "operationId": "prepareStrategy",
+        "summary": "Prepare a strategy",
+        "description": "For a purps.lol coin that was launched without a strategy (any preset but `creator`): the message the creator wallet signs to attach one now. The `config` is validated here and a malformed one is a 400 that says which field is wrong. The message carries a `sets:` line with the strategy in words (fee split, what profits do, take-profit and dip-buy rules, markets) next to its hash, so whoever signs reads the numbers.",
+        "parameters": [
+          {
+            "name": "mint",
+            "in": "path",
+            "required": true,
+            "description": "The token's mint address (Solana) or contract address (Robinhood Chain).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StrategyTerms"
+              }
+            }
+          }
+        },
+        "x-rate-limit": "30 a minute",
+        "x-cache": "none",
+        "x-flow": "manage",
+        "x-example": "/coins/{mint}/strategy/prepare",
+        "responses": {
+          "200": {
+            "description": "What to sign.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Prepared"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coins/{mint}/strategy/submit": {
+      "post": {
+        "tags": [
+          "Manage a coin"
+        ],
+        "operationId": "submitStrategy",
+        "summary": "Attach the strategy",
+        "description": "Register the strategy against the launch. The config must be byte-for-byte what prepare hashed. A coin's strategy is set once.",
+        "parameters": [
+          {
+            "name": "mint",
+            "in": "path",
+            "required": true,
+            "description": "The token's mint address (Solana) or contract address (Robinhood Chain).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StrategySubmit"
+              }
+            }
+          }
+        },
+        "x-rate-limit": "10 a minute",
+        "x-cache": "none",
+        "x-flow": "manage",
+        "x-example": "/coins/{mint}/strategy/submit",
+        "responses": {
+          "200": {
+            "description": "Registered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/StrategyResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coins/{mint}/authority": {
+      "get": {
+        "tags": [
+          "Creator authority"
+        ],
+        "operationId": "getAuthority",
+        "summary": "Where creator authority stands",
+        "description": "Whether a coin can be steered from outside at all, whether authority is off, on or frozen, who holds it, whether a request is waiting for review, the cooldowns and margin hold running now, and the platform's limits (leverage cap, actions a day, cooldown length, market depth floors, note length). Read it before preparing a change. Nothing here says whether any wallet is a platform admin.",
+        "parameters": [
+          {
+            "name": "mint",
+            "in": "path",
+            "required": true,
+            "description": "The token's mint address (Solana) or contract address (Robinhood Chain).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-rate-limit": "60 a minute",
+        "x-cache": "3 seconds",
+        "x-flow": "authority",
+        "x-example": "/coins/{mint}/authority",
+        "responses": {
+          "200": {
+            "description": "The authority state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Authority"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coins/{mint}/changes": {
+      "get": {
+        "tags": [
+          "Creator authority"
+        ],
+        "operationId": "listChanges",
+        "summary": "The Changes log",
+        "description": "Every strategy change and position action on the coin, by its owner or an admin, newest first: the coin page's Changes tab. A queued action moves to `done` or `failed` once the engine reports back. An admin's wallet is never named.",
+        "parameters": [
+          {
+            "name": "mint",
+            "in": "path",
+            "required": true,
+            "description": "The token's mint address (Solana) or contract address (Robinhood Chain).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many rows.",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "Only rows created before this ISO 8601 datetime, for paging.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-rate-limit": "60 a minute",
+        "x-cache": "5 seconds",
+        "x-flow": "authority",
+        "x-example": "/coins/{mint}/changes?limit=20",
+        "responses": {
+          "200": {
+            "description": "The changes, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CoinChange"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coins/{mint}/authority/prepare": {
+      "post": {
+        "tags": [
+          "Creator authority"
+        ],
+        "operationId": "prepareAuthority",
+        "summary": "Prepare a change",
+        "description": "Step 1 of a change through creator authority. Say which wallet will sign and what it will do (`kind`: act on a position, change the strategy, ask for authority, or hand the coin on), and get back the exact message to sign plus a `nonce` bound to this coin, this wallet and this exact action. The message is plain English and is the consent: it says what will happen (`does:` or `sets:`) and carries your `why:` note, which holders read on the Changes tab. Sign exactly that string. Nothing is stored or spent here; every check that guards money runs at submit, on the server's own figures. This step only refuses what can never work: the flagship (403), a coin that is not a purps.lol launch or has no strategy yet (404), a frozen coin (423), a request while authority is closed to new coins (403) or already on (409), a malformed action, config or note (400), or a server with signing not set up (503).",
+        "parameters": [
+          {
+            "name": "mint",
+            "in": "path",
+            "required": true,
+            "description": "The token's mint address (Solana) or contract address (Robinhood Chain).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorityPrepare"
+              }
+            }
+          }
+        },
+        "x-rate-limit": "30 a minute",
+        "x-cache": "none",
+        "x-flow": "authority",
+        "x-example": "/coins/{mint}/authority/prepare",
+        "responses": {
+          "200": {
+            "description": "What to sign.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AuthorityPrepared"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "423": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coins/{mint}/authority/submit": {
+      "post": {
+        "tags": [
+          "Creator authority"
+        ],
+        "operationId": "submitAuthority",
+        "summary": "Submit the signed change",
+        "description": "Step 2: the same body as prepare, plus `ts`, `nonce` and the wallet's `signature` over the message prepare returned (ed25519 over the UTF-8 bytes, base58). The signer must be the wallet named in prepare: the coin's owner, which is whoever holds its creator rewards, or a platform admin wallet. The nonce only fits the wallet, coin and exact action it was issued for, and a signature is good once. Every money check runs here on the server's own figures, so a change the coin page would refuse is refused here too. An `action` is queued for the engine and answers `queued` with the command id; watch /coins/{mint}/changes for done or failed, and /coins/{mint} for the position. A `strategy` change is applied at once and answers `changed`, the lines that differ. A `request` answers the request's `id` and `status`. A `handover` answers the new `payoutWallet`. Refusals: 401 for a bad signature, a nonce not issued for this wallet and action, or a timestamp older than five minutes; 403 when authority is not on for the coin; 409 when the coin is not live, the market already has an action running, nothing changed, or the signature was already used; 422 when a money check refuses it, with the reason; 423 frozen; 429 for the per-day action count or a cooldown still running, with `Retry-After`.",
+        "parameters": [
+          {
+            "name": "mint",
+            "in": "path",
+            "required": true,
+            "description": "The token's mint address (Solana) or contract address (Robinhood Chain).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthoritySubmit"
+              }
+            }
+          }
+        },
+        "x-rate-limit": "10 a minute",
+        "x-cache": "none",
+        "x-flow": "authority",
+        "x-example": "/coins/{mint}/authority/submit",
+        "responses": {
+          "200": {
+            "description": "Queued, applied, requested or handed over.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AuthorityResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "423": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transactions/send": {
+      "post": {
+        "tags": [
+          "Transactions"
+        ],
+        "operationId": "sendTransaction",
+        "summary": "Send a signed transaction",
+        "description": "Relay a signed Solana transaction from a launch or a fee-routing step. Only transactions that touch the launchpad programs are forwarded; anything else is refused. Waits up to 8 seconds for confirmation. `confirmed: false` means it was sent but not yet seen; poll /transactions/{signature}.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendTransaction"
+              }
+            }
+          }
+        },
+        "x-rate-limit": "60 a minute",
+        "x-cache": "none",
+        "x-flow": "launch-solana",
+        "x-example": "/transactions/send",
+        "responses": {
+          "200": {
+            "description": "Sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SendResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transactions/{signature}": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "operationId": "getTransaction",
+        "summary": "Transaction status",
+        "description": "Whether a relayed transaction has confirmed or failed on chain.",
+        "parameters": [
+          {
+            "name": "signature",
+            "in": "path",
+            "required": true,
+            "description": "The transaction signature, base58.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-rate-limit": "120 a minute",
+        "x-cache": "2 seconds",
+        "x-flow": "launch-solana",
+        "x-example": "/transactions/{signature}",
+        "responses": {
+          "200": {
+            "description": "The status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/TransactionStatus"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "description": "Always false on a failure."
+          },
+          "error": {
+            "type": "string",
+            "description": "A short reason in plain words: `coin not found`, `too many requests`, `invalid wallet signature`."
+          }
+        }
+      },
+      "CoinRef": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "Mint or contract address."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Ticker."
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Logo URL.",
+            "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "description": "The coin's page on purps.lol."
+          }
+        }
+      },
+      "CoinPage": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "How many coins match, across every page."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "The offset this page starts at."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "The page size used."
+          },
+          "flagshipMint": {
+            "type": "string",
+            "description": "The mint of $PURPS itself."
+          },
+          "markets": {
+            "type": "array",
+            "description": "Every perp market symbol some coin on the chosen chain bets on, most used first — the values `market` accepts.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "items": {
+            "type": "array",
+            "description": "The coins on this page.",
+            "items": {
+              "$ref": "#/components/schemas/CoinSummary"
+            }
+          }
+        }
+      },
+      "CoinSummary": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "Mint address on Solana, contract address on Robinhood Chain."
+          },
+          "chain": {
+            "type": "string",
+            "description": "Which chain the coin lives on.",
+            "enum": [
+              "solana",
+              "robinhood"
+            ]
+          },
+          "origin": {
+            "type": "string",
+            "description": "Where it came from. `pump` is a redirected pump.fun coin, `pumpfun` one launched through this site, `pons` a Robinhood Chain launch.",
+            "enum": [
+              "launchpad",
+              "pumpfun",
+              "pump",
+              "meteora",
+              "pons"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Ticker."
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Logo URL.",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "`active` once the strategy is running; `pending` before it, `paused` or `stopped` when it is not.",
+            "enum": [
+              "pending",
+              "active",
+              "paused",
+              "stopped"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "When the coin was registered here, ISO 8601."
+          },
+          "url": {
+            "type": "string",
+            "description": "The coin's page on purps.lol."
+          },
+          "marketCapUsd": {
+            "type": "number",
+            "description": "Market cap in US dollars.",
+            "nullable": true
+          },
+          "holders": {
+            "type": "integer",
+            "description": "Holder count.",
+            "nullable": true
+          },
+          "rewardMode": {
+            "type": "string",
+            "description": "What profits do: `burn` buys and burns the coin, `holders` airdrops the coin to holders, `backed` airdrops another asset.",
+            "enum": [
+              "burn",
+              "holders",
+              "backed"
+            ]
+          },
+          "feeShareBps": {
+            "type": "integer",
+            "description": "Share of creator fees routed to the strategy, in basis points."
+          },
+          "legs": {
+            "type": "array",
+            "description": "The perp positions the strategy holds.",
+            "items": {
+              "$ref": "#/components/schemas/Leg"
+            }
+          },
+          "openPositions": {
+            "type": "integer",
+            "description": "How many of those are open right now."
+          },
+          "accounting": {
+            "$ref": "#/components/schemas/Accounting",
+            "type": "object",
+            "description": "The coin's books."
+          },
+          "launch": {
+            "$ref": "#/components/schemas/LaunchSummary",
+            "type": "object",
+            "description": "Curve facts for a purps.lol coin, else null.",
+            "nullable": true
+          }
+        }
+      },
+      "Leg": {
+        "type": "object",
+        "properties": {
+          "market": {
+            "type": "string",
+            "description": "Perp market, e.g. `ETH` or `xyz:TSLA`. One of /markets."
+          },
+          "direction": {
+            "type": "string",
+            "description": "Long or short.",
+            "enum": [
+              "long",
+              "short"
+            ]
+          },
+          "leverage": {
+            "type": "number",
+            "description": "Leverage multiple, within the market's cap."
+          }
+        }
+      },
+      "Accounting": {
+        "type": "object",
+        "description": "Lifetime figures. Chain amounts are in `unit`; perp amounts are in US dollars.",
+        "properties": {
+          "unit": {
+            "type": "string",
+            "description": "The unit of the chain-side figures: `SOL`, or the pair token on Robinhood Chain."
+          },
+          "feesClaimed": {
+            "type": "number",
+            "description": "Creator fees claimed so far."
+          },
+          "boughtBack": {
+            "type": "number",
+            "description": "Spent buying the coin back."
+          },
+          "buybackQueued": {
+            "type": "number",
+            "description": "Waiting to be spent on buybacks."
+          },
+          "reserve": {
+            "type": "number",
+            "description": "Held in the coin's reserve."
+          },
+          "tokensBurned": {
+            "type": "number",
+            "description": "Coins burned, in whole tokens."
+          },
+          "tokensPaidOut": {
+            "type": "number",
+            "description": "Coins airdropped to holders, in whole tokens."
+          },
+          "marginDepositedUsd": {
+            "type": "number",
+            "description": "Sent to the perp exchange as margin."
+          },
+          "realizedProfitUsd": {
+            "type": "number",
+            "description": "Profit realised on the perp side."
+          },
+          "realizedLossUsd": {
+            "type": "number",
+            "description": "Losses realised on the perp side, as a positive figure. Realised profit less this is the net realised PnL."
+          },
+          "profitWithdrawnUsd": {
+            "type": "number",
+            "description": "Profit brought back to the chain."
+          }
+        }
+      },
+      "LaunchSummary": {
+        "type": "object",
+        "properties": {
+          "quote": {
+            "type": "object",
+            "description": "The token the curve trades in.",
+            "properties": {
+              "mint": {
+                "type": "string",
+                "description": "Quote mint."
+              },
+              "symbol": {
+                "type": "string",
+                "description": "Quote ticker."
+              }
+            }
+          },
+          "curvePct": {
+            "type": "number",
+            "description": "How far along the bonding curve, 0 to 100.",
+            "nullable": true
+          },
+          "migrated": {
+            "type": "boolean",
+            "description": "True once the coin has graduated to a pool."
+          },
+          "raisedQuote": {
+            "type": "number",
+            "description": "Quote raised on the curve."
+          },
+          "paysHolders": {
+            "type": "boolean",
+            "description": "Whether fees are airdropped to holders."
+          },
+          "airdrop": {
+            "type": "object",
+            "description": "The holder airdrops.",
+            "properties": {
+              "potQuote": {
+                "type": "number",
+                "description": "Accrued toward the next airdrop."
+              },
+              "paidQuote": {
+                "type": "number",
+                "description": "Paid to holders so far."
+              },
+              "payouts": {
+                "type": "integer",
+                "description": "Number of airdrops paid."
+              },
+              "lastAt": {
+                "type": "string",
+                "description": "When the last one settled.",
+                "nullable": true
+              },
+              "lastHolders": {
+                "type": "integer",
+                "description": "How many wallets the last one paid.",
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
+      "Coin": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "Mint or contract address."
+          },
+          "chain": {
+            "type": "string",
+            "description": "Which chain.",
+            "enum": [
+              "solana",
+              "robinhood"
+            ]
+          },
+          "origin": {
+            "type": "string",
+            "description": "Where it came from.",
+            "enum": [
+              "launchpad",
+              "pumpfun",
+              "pump",
+              "meteora",
+              "pons"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Ticker."
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Logo URL.",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Coin status."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "ISO 8601."
+          },
+          "url": {
+            "type": "string",
+            "description": "The coin's page on purps.lol."
+          },
+          "marketCapUsd": {
+            "type": "number",
+            "description": "Market cap in US dollars.",
+            "nullable": true
+          },
+          "circulatingSupply": {
+            "type": "number",
+            "description": "Supply the market cap is based on.",
+            "nullable": true
+          },
+          "tokenSupply": {
+            "type": "number",
+            "description": "Total supply as stored.",
+            "nullable": true
+          },
+          "holders": {
+            "type": "integer",
+            "description": "Holder count.",
+            "nullable": true
+          },
+          "links": {
+            "type": "object",
+            "description": "Socials, from the token's metadata or its DexScreener profile.",
+            "properties": {
+              "twitter": {
+                "type": "string",
+                "description": "X / Twitter URL.",
+                "nullable": true
+              },
+              "telegram": {
+                "type": "string",
+                "description": "Telegram URL.",
+                "nullable": true
+              },
+              "website": {
+                "type": "string",
+                "description": "Website URL.",
+                "nullable": true
+              }
+            }
+          },
+          "pair": {
+            "type": "object",
+            "description": "The token this coin trades against, when it is not SOL.",
+            "nullable": true,
+            "properties": {
+              "address": {
+                "type": "string",
+                "description": "Mint or contract address of the pair token."
+              },
+              "symbol": {
+                "type": "string",
+                "description": "Pair ticker."
+              },
+              "decimals": {
+                "type": "integer",
+                "description": "Pair decimals.",
+                "nullable": true
+              }
+            }
+          },
+          "venue": {
+            "type": "string",
+            "enum": [
+              "hyperliquid",
+              "orderly"
+            ],
+            "description": "The exchange the coin's perps trade on. An Orderly coin trades from its Solana wallet, so its hyperliquid wallet is null."
+          },
+          "wallets": {
+            "type": "object",
+            "description": "The wallets the strategy runs from.",
+            "properties": {
+              "solana": {
+                "type": "string",
+                "description": "Solana wallet.",
+                "nullable": true
+              },
+              "hyperliquid": {
+                "type": "string",
+                "description": "Perp wallet.",
+                "nullable": true
+              },
+              "robinhood": {
+                "type": "string",
+                "description": "Robinhood Chain wallet.",
+                "nullable": true
+              }
+            }
+          },
+          "strategy": {
+            "$ref": "#/components/schemas/StrategyView",
+            "type": "object",
+            "description": "How the coin uses its fees. Null for a coin that only exists on the launchpad.",
+            "nullable": true
+          },
+          "accounting": {
+            "$ref": "#/components/schemas/Accounting",
+            "type": "object",
+            "description": "The coin's books."
+          },
+          "positions": {
+            "type": "array",
+            "description": "The perp positions the coin page lists, open and recently closed.",
+            "items": {
+              "$ref": "#/components/schemas/Position"
+            }
+          },
+          "pendingAirdrop": {
+            "type": "object",
+            "description": "What is waiting for the next holder payout, as the coin page's Pending airdrop row shows it. Null for a coin that burns.",
+            "nullable": true,
+            "properties": {
+              "usd": {
+                "type": "number",
+                "description": "Dollar value of the pot.",
+                "nullable": true
+              },
+              "assets": {
+                "type": "array",
+                "description": "The pot per asset: `{ symbol, amount, usd }`.",
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "payoutsPaid": {
+            "type": "array",
+            "description": "Lifetime holder payouts, per asset: `{ asset, amount, usd }`.",
+            "items": {
+              "type": "object"
+            }
+          },
+          "activity": {
+            "type": "array",
+            "description": "The last 40 events on the coin's timeline, newest first.",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            }
+          },
+          "launch": {
+            "$ref": "#/components/schemas/Launch",
+            "type": "object",
+            "description": "The purps.lol launch record, else null.",
+            "nullable": true
+          },
+          "prices": {
+            "type": "object",
+            "description": "Reference prices at the time of the request.",
+            "properties": {
+              "solUsd": {
+                "type": "number",
+                "description": "SOL in US dollars.",
+                "nullable": true
+              },
+              "quoteUsd": {
+                "type": "number",
+                "description": "The pair token in US dollars.",
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
+      "StrategyView": {
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "string",
+            "description": "`steady`, `balanced`, `degen`, or `custom` when the rules match no preset. Null for a coin registered before rules existed.",
+            "nullable": true
+          },
+          "rules": {
+            "type": "object",
+            "description": "The trading rules the coin runs, as the coin page shows them. Null for a coin registered before rules existed.",
+            "nullable": true,
+            "properties": {
+              "tpTriggerPct": {
+                "type": "number",
+                "description": "Take profit every time the perp is up this much on its margin, percent."
+              },
+              "tpSlicePct": {
+                "type": "number",
+                "description": "How much of the position is sold each time, percent."
+              },
+              "rungCount": {
+                "type": "integer",
+                "description": "How many dip buys the reserve funds."
+              },
+              "rungMode": {
+                "type": "string",
+                "description": "What a dip buy does: `margin` adds margin, `size` buys more, `mixed` does both.",
+                "enum": [
+                  "margin",
+                  "mixed",
+                  "size"
+                ]
+              }
+            }
+          },
+          "rewardMode": {
+            "type": "string",
+            "description": "`burn`, `holders` or `backed`.",
+            "enum": [
+              "burn",
+              "holders",
+              "backed"
+            ]
+          },
+          "split": {
+            "type": "object",
+            "description": "Where each claimed fee goes, in basis points.",
+            "properties": {
+              "buybackBps": {
+                "type": "integer",
+                "description": "To buybacks."
+              },
+              "marginBps": {
+                "type": "integer",
+                "description": "To perp margin."
+              },
+              "reserveBps": {
+                "type": "integer",
+                "description": "To the reserve."
+              }
+            }
+          },
+          "legs": {
+            "type": "array",
+            "description": "The perp legs.",
+            "items": {
+              "$ref": "#/components/schemas/Leg"
+            }
+          },
+          "payout": {
+            "type": "object",
+            "description": "What holders are paid in, for `backed` coins.",
+            "properties": {
+              "mint": {
+                "type": "string",
+                "description": "Primary payout asset.",
+                "nullable": true
+              },
+              "mint2": {
+                "type": "string",
+                "description": "Second payout asset, when a coin pays two.",
+                "nullable": true
+              },
+              "extra": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Every payout asset beyond the first, up to four. `mint2` is the first of these."
+              }
+            }
+          },
+          "holderMinimumUsd": {
+            "type": "number",
+            "description": "Smallest holding that is included in airdrops.",
+            "nullable": true
+          }
+        }
+      },
+      "Position": {
+        "type": "object",
+        "properties": {
+          "market": {
+            "type": "string",
+            "description": "Perp market."
+          },
+          "side": {
+            "type": "string",
+            "description": "Long or short.",
+            "enum": [
+              "long",
+              "short"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "`open`, `opening`, `closing` or `closed`, as the coin page lists them."
+          },
+          "size": {
+            "type": "number",
+            "description": "Position size in the market's base unit.",
+            "nullable": true
+          },
+          "entryPrice": {
+            "type": "number",
+            "description": "Average entry.",
+            "nullable": true
+          },
+          "leverage": {
+            "type": "number",
+            "description": "Leverage multiple.",
+            "nullable": true
+          },
+          "collateralUsd": {
+            "type": "number",
+            "description": "Margin behind the position.",
+            "nullable": true
+          },
+          "liquidationPrice": {
+            "type": "number",
+            "description": "Where it would be liquidated.",
+            "nullable": true
+          },
+          "unrealizedPnlUsd": {
+            "type": "number",
+            "description": "Open profit or loss.",
+            "nullable": true
+          },
+          "roe": {
+            "type": "number",
+            "description": "Return on the margin, as a fraction.",
+            "nullable": true
+          },
+          "realizedPnlUsd": {
+            "type": "number",
+            "description": "Profit already banked from this market, as the coin page shows it."
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable event id."
+          },
+          "type": {
+            "type": "string",
+            "description": "`fee_claim`, `buyback`, `burn`, `holder_payout`, `perp_open`, `launch`, `graduation` and others."
+          },
+          "status": {
+            "type": "string",
+            "description": "`confirmed` or `pending`. Failed events are not published.",
+            "enum": [
+              "confirmed",
+              "pending"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "description": "The amount involved, in `asset`.",
+            "nullable": true
+          },
+          "asset": {
+            "type": "string",
+            "description": "The asset of `amount`.",
+            "nullable": true
+          },
+          "txHash": {
+            "type": "string",
+            "description": "The on-chain transaction, when there is one.",
+            "nullable": true
+          },
+          "at": {
+            "type": "string",
+            "description": "ISO 8601."
+          },
+          "detail": {
+            "type": "object",
+            "description": "Extra fields that vary by event type.",
+            "nullable": true
+          }
+        }
+      },
+      "Launch": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "The coin's mint."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Ticker."
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Logo URL.",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "`live` on the curve, `migrated` once graduated, `pending` or `failed` before that.",
+            "enum": [
+              "pending",
+              "live",
+              "migrated",
+              "failed"
+            ]
+          },
+          "venue": {
+            "type": "string",
+            "description": "The launch venue.",
+            "enum": [
+              "dbc",
+              "launchlab"
+            ]
+          },
+          "quote": {
+            "type": "object",
+            "description": "The token the curve trades in.",
+            "properties": {
+              "mint": {
+                "type": "string",
+                "description": "Quote mint."
+              },
+              "symbol": {
+                "type": "string",
+                "description": "Quote ticker."
+              },
+              "iconUrl": {
+                "type": "string",
+                "description": "Quote logo.",
+                "nullable": true
+              }
+            }
+          },
+          "priceQuote": {
+            "type": "number",
+            "description": "Last price in the quote token.",
+            "nullable": true
+          },
+          "curvePct": {
+            "type": "number",
+            "description": "Curve progress, 0 to 100.",
+            "nullable": true
+          },
+          "raisedQuote": {
+            "type": "number",
+            "description": "Quote raised on the curve."
+          },
+          "devBuyQuote": {
+            "type": "number",
+            "description": "The creator's own first buy."
+          },
+          "fees": {
+            "type": "object",
+            "description": "The fee setup.",
+            "properties": {
+              "preset": {
+                "type": "string",
+                "description": "Where fees go: `airdrop`, `split`, `creator` or `strategy`."
+              },
+              "split": {
+                "type": "object",
+                "description": "The three-way share of the creator fee, basis points summing to 10000: `strategyBps` into the strategy, `airdropBps` to holders in the pair token, `creatorBps` straight to the creator wallet. A launch that sent only `feePreset` shows that preset's split.",
+                "properties": {
+                  "strategyBps": {
+                    "type": "integer",
+                    "description": "Share fed into the strategy."
+                  },
+                  "airdropBps": {
+                    "type": "integer",
+                    "description": "Share paid to holders in the pair token."
+                  },
+                  "creatorBps": {
+                    "type": "integer",
+                    "description": "Share sent to the creator wallet."
+                  }
+                }
+              },
+              "creatorPpm": {
+                "type": "integer",
+                "description": "Creator fee, parts per million of curve volume."
+              },
+              "creatorBps": {
+                "type": "integer",
+                "description": "Creator fee tier on Meteora, basis points.",
+                "nullable": true
+              }
+            }
+          },
+          "creatorWallet": {
+            "type": "string",
+            "description": "Who launched it."
+          },
+          "feeWallet": {
+            "type": "string",
+            "description": "Where creator fees land.",
+            "nullable": true
+          },
+          "airdrop": {
+            "type": "object",
+            "description": "Holder airdrops.",
+            "properties": {
+              "potQuote": {
+                "type": "number",
+                "description": "Accrued toward the next airdrop."
+              },
+              "paidQuote": {
+                "type": "number",
+                "description": "Paid to holders so far."
+              },
+              "lastAt": {
+                "type": "string",
+                "description": "When the last one settled.",
+                "nullable": true
+              }
+            }
+          },
+          "migratedAt": {
+            "type": "string",
+            "description": "When it graduated.",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "When it launched."
+          },
+          "url": {
+            "type": "string",
+            "description": "The coin's page on purps.lol."
+          }
+        }
+      },
+      "LaunchStatus": {
+        "type": "object",
+        "description": "The Launch object; `status` is what a caller waiting on it watches.",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "`pending` → `live` → `migrated`, or `failed`.",
+            "enum": [
+              "pending",
+              "live",
+              "migrated",
+              "failed"
+            ]
+          },
+          "mint": {
+            "type": "string",
+            "description": "The coin's mint."
+          },
+          "url": {
+            "type": "string",
+            "description": "The coin's page on purps.lol."
+          }
+        }
+      },
+      "Market": {
+        "type": "object",
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "description": "The name a strategy leg uses, e.g. `ETH` or `xyz:TSLA`."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "pair": {
+            "type": "string",
+            "description": "The contract name as the exchange writes it: `ETH-USD` on Hyperliquid, `ETH-USDC` on Orderly and the builder exchanges."
+          },
+          "markPx": {
+            "type": "number",
+            "description": "Current mark price."
+          },
+          "funding": {
+            "type": "number",
+            "description": "Current funding rate."
+          },
+          "maxLeverage": {
+            "type": "integer",
+            "description": "The most leverage a leg on this market may use, across the venues that list it."
+          },
+          "hlMaxLeverage": {
+            "type": "integer",
+            "description": "The cap on Hyperliquid; absent or 0 when Hyperliquid does not list the market."
+          },
+          "orderlyMaxLeverage": {
+            "type": "integer",
+            "description": "The cap on Orderly; absent or 0 when Orderly does not list the market."
+          },
+          "szDecimals": {
+            "type": "integer",
+            "description": "Decimal places in a position size on this market."
+          },
+          "category": {
+            "type": "string",
+            "description": "`Crypto`, `Stocks`, `FX`, `Commodities`, `Indices`."
+          },
+          "dayVolumeUsd": {
+            "type": "number",
+            "description": "Dollars traded in the last day, where the venue reports it."
+          },
+          "openInterestUsd": {
+            "type": "number",
+            "description": "Dollars of open interest, where the venue reports it. Creator authority moves are judged against it."
+          },
+          "addedAt": {
+            "type": "integer",
+            "description": "When the market was listed here, Unix milliseconds, where known."
+          }
+        }
+      },
+      "Pairs": {
+        "type": "object",
+        "properties": {
+          "meteora": {
+            "type": "array",
+            "description": "Pairs for a purps.lol launch. Use `mint` as `quoteMint`.",
+            "items": {
+              "$ref": "#/components/schemas/Pair"
+            }
+          },
+          "pumpfun": {
+            "type": "array",
+            "description": "Pairs for a pump.fun launch. SOL is the default when none is given.",
+            "items": {
+              "$ref": "#/components/schemas/Pair"
+            }
+          },
+          "robinhood": {
+            "type": "array",
+            "description": "Pairs for a Robinhood Chain launch. Use `address` as `pairToken`; ETH is the zero address.",
+            "items": {
+              "$ref": "#/components/schemas/RobinhoodPair"
+            }
+          }
+        }
+      },
+      "Pair": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "The pair token's mint."
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Ticker."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "decimals": {
+            "type": "integer",
+            "description": "Token decimals."
+          },
+          "group": {
+            "type": "string",
+            "description": "`majors`, `stocks`, `memes` and so on."
+          },
+          "iconUrl": {
+            "type": "string",
+            "description": "Logo.",
+            "nullable": true
+          }
+        }
+      },
+      "RobinhoodPair": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The pair token's contract address; the zero address is ETH."
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Ticker."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "decimals": {
+            "type": "integer",
+            "description": "Token decimals."
+          },
+          "group": {
+            "type": "string",
+            "description": "Asset group."
+          },
+          "iconUrl": {
+            "type": "string",
+            "description": "Logo."
+          },
+          "graduationThreshold": {
+            "type": "string",
+            "description": "How much of the pair a curve raises before it graduates."
+          },
+          "payable": {
+            "type": "boolean",
+            "description": "Whether holders can be paid in this asset."
+          }
+        }
+      },
+      "Prepared": {
+        "type": "object",
+        "properties": {
+          "ts": {
+            "type": "integer",
+            "description": "Unix seconds. Send it back unchanged with the signature."
+          },
+          "message": {
+            "type": "string",
+            "description": "The exact text to sign. Sign the UTF-8 bytes as they are: no prefix, no hashing on Solana; `personal_sign` on Robinhood Chain."
+          },
+          "expiresInSeconds": {
+            "type": "integer",
+            "description": "How long the signature stays valid. 300."
+          },
+          "hash": {
+            "type": "string",
+            "description": "Robinhood Chain launch: the terms' hash, as embedded in the message. For your records."
+          },
+          "configHash": {
+            "type": "string",
+            "description": "Strategy prepare: the hash of `config` exactly as you sent it, as embedded in the message."
+          }
+        }
+      },
+      "Strategy": {
+        "type": "object",
+        "description": "How a coin uses its fees. Basis points sum to 10000 across the three splits.",
+        "properties": {
+          "splitBuybackBps": {
+            "type": "integer",
+            "description": "Share of each fee that buys the coin back.",
+            "required": true
+          },
+          "splitMarginBps": {
+            "type": "integer",
+            "description": "Share sent to the perp exchange as margin.",
+            "required": true
+          },
+          "splitReserveBps": {
+            "type": "integer",
+            "description": "Share kept as a reserve that backs the positions.",
+            "required": true
+          },
+          "perpLegs": {
+            "type": "array",
+            "description": "The positions to hold: `{ market, direction, leverage, weightBps, reserveMode }`. `market` from /markets, `leverage` a whole number within its cap, weights summing to 10000, `reserveMode` `defensive` or `none` (use the preset's `legReserveMode`). Empty means no perps, in which case margin and reserve must be 0.",
+            "items": {
+              "type": "object"
+            },
+            "required": true
+          },
+          "rewardMode": {
+            "type": "string",
+            "description": "What profits do: `burn` (default), `holders` pays the coin itself, `backed` pays `payoutMint`. Paying coins need `holderPayoutsEnabled` in /launch-options.",
+            "enum": [
+              "burn",
+              "holders",
+              "backed"
+            ]
+          },
+          "payoutMint": {
+            "type": "string",
+            "description": "`backed` only: the asset holders are paid in. On Solana, a mint from /launch-options `payoutAssets` or any Solana mint with a real market. On Robinhood Chain, a `0x` token address that passes the depth check: one of the venue's `payoutAssets`, or any token /robinhood/assets/{address} reports as payable. ETH itself cannot be a payout asset there.",
+            "nullable": true
+          },
+          "payoutMintsExtra": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Further payout assets for any paying coin, up to four beyond the first; every buyback splits evenly across all of them and holders receive each. Same rules per asset as `payoutMint`.",
+            "nullable": true
+          },
+          "payoutMint2": {
+            "type": "string",
+            "description": "Older form of `payoutMintsExtra` with one asset; still accepted.",
+            "nullable": true
+          },
+          "strategy": {
+            "type": "object",
+            "description": "The trading rules: `{ preset, tpTriggerPct, tpSlicePct, rungCount, rungMode }`. Take a preset's `config.strategy` from /launch-options, or set your own.",
+            "nullable": true
+          },
+          "ownerControls": {
+            "type": "boolean",
+            "description": "Creator authority from launch: the creator can steer the coin from its page or through /coins/{mint}/authority, every move signed and shown to holders. Off unless set; honoured only while the platform has creator authority open (see `openToPublic` on /coins/{mint}/authority). It is part of the signed words when set."
+          }
+        }
+      },
+      "LaunchOptions": {
+        "type": "object",
+        "properties": {
+          "holderPayoutsEnabled": {
+            "type": "boolean",
+            "description": "Whether coins may pay holders (`rewardMode` holders or backed) on any venue. When false, only burn coins register."
+          },
+          "venues": {
+            "type": "object",
+            "description": "One entry per launch venue, each with what that venue allows.",
+            "properties": {
+              "purps": {
+                "$ref": "#/components/schemas/VenueOptions",
+                "type": "object",
+                "description": "The purps.lol launchpad on Solana."
+              },
+              "pumpfun": {
+                "$ref": "#/components/schemas/VenueOptions",
+                "type": "object",
+                "description": "pump.fun. Adds `customPairAccess`: who may launch on a pair other than SOL."
+              },
+              "robinhood": {
+                "$ref": "#/components/schemas/VenueOptions",
+                "type": "object",
+                "description": "Pons on Robinhood Chain. Payout assets carry `address` instead of `mint`."
+              }
+            }
+          },
+          "presets": {
+            "type": "array",
+            "description": "The site's strategy presets, the same on every venue, each with the exact `config` fields to send.",
+            "items": {
+              "$ref": "#/components/schemas/StrategyPreset"
+            }
+          },
+          "airdropOnly": {
+            "type": "object",
+            "description": "The config for a coin that only pays holders and holds no perps: the whole fee to the buyback, no legs. Set `payoutMint` for a backed asset, or leave `rewardMode` as holders for the coin itself."
+          }
+        }
+      },
+      "VenueOptions": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "`solana` or `robinhood`.",
+            "enum": [
+              "solana",
+              "robinhood"
+            ]
+          },
+          "access": {
+            "type": "object",
+            "description": "`{ openToAll, allowedWallets }`. When not open to all, only the listed wallets may launch here."
+          },
+          "pairs": {
+            "type": "object",
+            "description": "Where this venue's pairs are listed: `{ from: \"/pairs\", key, note }`. Read `/pairs` and take the list under `key`."
+          },
+          "feePresets": {
+            "type": "array",
+            "description": "The `feePreset` values this venue accepts.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "fees": {
+            "type": "object",
+            "description": "The venue's fee terms: purps.lol has `platformBps`, `creatorFeeBps { min, max, default }` and `raiseTargetSol`; Robinhood Chain has `creatorTaxBps { min, max, default }`."
+          },
+          "payoutAssets": {
+            "type": "array",
+            "description": "What holders can be paid in on this venue, as the create page lists them.",
+            "items": {
+              "$ref": "#/components/schemas/PayoutAsset"
+            }
+          },
+          "payoutNote": {
+            "type": "string",
+            "description": "What else is accepted beyond the list, and how it is checked."
+          }
+        }
+      },
+      "StrategyPreset": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "`steady`, `balanced` or `degen`."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "sells": {
+            "type": "string",
+            "description": "How it takes profit, in words."
+          },
+          "buys": {
+            "type": "string",
+            "description": "How it handles dips, in words."
+          },
+          "config": {
+            "type": "object",
+            "description": "Merge into your Strategy: the three splits, the `strategy` tuning object, and `legReserveMode`, the `reserveMode` to set on every leg (`none` when the preset keeps no reserve). Add your own `perpLegs`, `rewardMode` and payout mints."
+          }
+        }
+      },
+      "PayoutAsset": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "Solana venues: use as `payoutMint` or in `payoutMintsExtra`."
+          },
+          "address": {
+            "type": "string",
+            "description": "Robinhood Chain: use as `payoutMint` or in `payoutMintsExtra`."
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Ticker, e.g. `AAPLx`."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`crypto`, `stock`, `native` and so on."
+          },
+          "market": {
+            "type": "string",
+            "description": "Solana venues: the perp market it backs, e.g. `AAPL`."
+          },
+          "decimals": {
+            "type": "integer",
+            "description": "Token decimals."
+          },
+          "iconUrl": {
+            "type": "string",
+            "description": "Logo."
+          }
+        }
+      },
+      "FeeSplit": {
+        "type": "object",
+        "properties": {
+          "strategyBps": {
+            "type": "integer",
+            "description": "Share swapped to SOL and fed into the coin's strategy.",
+            "required": true
+          },
+          "airdropBps": {
+            "type": "integer",
+            "description": "Share paid to holders in the pair token from the airdrop pot.",
+            "required": true
+          },
+          "creatorBps": {
+            "type": "integer",
+            "description": "Share sent straight to the creator wallet, in the pair token.",
+            "required": true
+          }
+        }
+      },
+      "LaunchBuild": {
+        "type": "object",
+        "description": "A purps.lol launch, in one call. No `ts` or `signature`: the launch transaction you sign is the proof.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "1 to 32 characters.",
+            "required": true
+          },
+          "symbol": {
+            "type": "string",
+            "description": "1 to 10 characters.",
+            "required": true
+          },
+          "quoteMint": {
+            "type": "string",
+            "description": "The pair, from /pairs `meteora`.",
+            "required": true
+          },
+          "feePreset": {
+            "type": "string",
+            "description": "Where creator fees go: `airdrop` to holders in the pair token, `split` half to holders half to you, `creator` all to your wallet, `strategy` into a strategy you send now. Send `feeSplit` for any other share.",
+            "enum": [
+              "airdrop",
+              "split",
+              "creator",
+              "strategy"
+            ],
+            "required": true
+          },
+          "feeSplit": {
+            "$ref": "#/components/schemas/FeeSplit",
+            "type": "object",
+            "description": "Optional three-way share of the creator fee, basis points summing to 10000. `strategy` is required when `strategyBps` is above zero."
+          },
+          "devBuySol": {
+            "type": "number",
+            "description": "Your own first buy, in SOL. Converted to the pair on the way in when the pair is not SOL. Default 0."
+          },
+          "creatorFeeBps": {
+            "type": "integer",
+            "description": "Your fee tier, basis points of curve volume, on top of the platform's 1%. Default 100 (1%); 50 (0.5%) to 980 (9.8%)."
+          },
+          "strategy": {
+            "$ref": "#/components/schemas/Strategy",
+            "type": "object",
+            "description": "Required when `feePreset` is `strategy` or `feeSplit.strategyBps` is above zero. Checked before anything is uploaded; registered by us the moment the launch goes live."
+          },
+          "creatorWallet": {
+            "type": "string",
+            "description": "The Solana wallet that signs the transactions and pays.",
+            "required": true
+          },
+          "image": {
+            "type": "string",
+            "description": "The coin's logo as a data URL (`data:image/png;base64,…`). PNG, JPEG, WebP or GIF, 512KB max. Send this or `imageUrl`."
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "A public https link to the logo instead of `image`. Fetched by us under the same size and type rules."
+          },
+          "description": {
+            "type": "string",
+            "description": "Up to 500 characters. The coin's website in its metadata is always its purps.lol page; add your own links as `twitter` and `telegram`."
+          },
+          "twitter": {
+            "type": "string",
+            "description": "https:// link."
+          },
+          "telegram": {
+            "type": "string",
+            "description": "https:// link."
+          }
+        }
+      },
+      "PumpLaunchBuild": {
+        "type": "object",
+        "description": "A pump.fun launch, in one call. No `ts` or `signature`: the create transaction you sign is the proof.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "1 to 32 characters.",
+            "required": true
+          },
+          "symbol": {
+            "type": "string",
+            "description": "1 to 10 characters.",
+            "required": true
+          },
+          "quoteMint": {
+            "type": "string",
+            "description": "A pair from /pairs `pumpfun`. Omit for SOL. A custom pair needs `customPairAccess` in /launch-options."
+          },
+          "devBuySol": {
+            "type": "number",
+            "description": "Your own first buy, in SOL. Default 0."
+          },
+          "creatorWallet": {
+            "type": "string",
+            "description": "The Solana wallet that signs the transactions and pays.",
+            "required": true
+          },
+          "image": {
+            "type": "string",
+            "description": "The coin's logo as a data URL (`data:image/png;base64,…`). PNG, JPEG, WebP or GIF, 512KB max. Send this or `imageUrl`."
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "A public https link to the logo instead of `image`. Fetched by us under the same size and type rules."
+          },
+          "description": {
+            "type": "string",
+            "description": "Up to 500 characters. The coin's website in its metadata is always its purps.lol page; add your own links as `twitter` and `telegram`."
+          },
+          "twitter": {
+            "type": "string",
+            "description": "https:// link."
+          },
+          "telegram": {
+            "type": "string",
+            "description": "https:// link."
+          }
+        }
+      },
+      "PumpFees": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "The pump.fun coin.",
+            "required": true
+          },
+          "creatorWallet": {
+            "type": "string",
+            "description": "The coin's on-chain creator, who will sign.",
+            "required": true
+          }
+        }
+      },
+      "FeeRouting": {
+        "type": "object",
+        "properties": {
+          "done": {
+            "type": "boolean",
+            "description": "True when the fees are already routed and there is nothing to sign."
+          },
+          "transaction": {
+            "type": "string",
+            "description": "Base64 transaction to sign and send, when not done.",
+            "nullable": true
+          }
+        }
+      },
+      "SolanaBuild": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "The new coin's mint address."
+          },
+          "transactions": {
+            "type": "array",
+            "description": "Base64 transactions to sign and send in order.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createIndex": {
+            "type": "integer",
+            "description": "Which of `transactions` is the create. Sign that one with the mint key as well."
+          },
+          "mintSecret": {
+            "type": "string",
+            "description": "The mint keypair's secret, base58. Powerless after the launch; use it once to countersign the create.",
+            "nullable": true
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Where the logo was stored.",
+            "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "description": "The coin's future page."
+          }
+        }
+      },
+      "SendTransaction": {
+        "type": "object",
+        "properties": {
+          "transaction": {
+            "type": "string",
+            "description": "The signed transaction, base64.",
+            "required": true
+          }
+        }
+      },
+      "SendResult": {
+        "type": "object",
+        "properties": {
+          "signature": {
+            "type": "string",
+            "description": "The transaction signature."
+          },
+          "confirmed": {
+            "type": "boolean",
+            "description": "Whether it confirmed within the wait. If false, poll /transactions/{signature}."
+          }
+        }
+      },
+      "TransactionStatus": {
+        "type": "object",
+        "properties": {
+          "confirmed": {
+            "type": "boolean",
+            "description": "Confirmed or finalized on chain."
+          },
+          "failed": {
+            "type": "boolean",
+            "description": "Landed but errored."
+          }
+        }
+      },
+      "Redirect": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "The pump.fun coin."
+          },
+          "name": {
+            "type": "string",
+            "description": "From its metadata.",
+            "nullable": true
+          },
+          "symbol": {
+            "type": "string",
+            "description": "From its metadata.",
+            "nullable": true
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "From its metadata.",
+            "nullable": true
+          },
+          "creator": {
+            "type": "string",
+            "description": "Its current on-chain creator.",
+            "nullable": true
+          },
+          "feeWallet": {
+            "type": "string",
+            "description": "The PURPS wallet its fees must be routed to."
+          },
+          "redirected": {
+            "type": "boolean",
+            "description": "Whether they already are."
+          },
+          "feeShareBps": {
+            "type": "integer",
+            "description": "How much of the creator fee reaches the strategy, in basis points."
+          },
+          "registered": {
+            "type": "boolean",
+            "description": "Whether a strategy is registered here."
+          },
+          "url": {
+            "type": "string",
+            "description": "The coin's page on purps.lol."
+          }
+        }
+      },
+      "RedirectSubmit": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "The pump.fun coin.",
+            "required": true
+          },
+          "config": {
+            "$ref": "#/components/schemas/Strategy",
+            "type": "object",
+            "description": "The strategy to run.",
+            "required": true
+          },
+          "name": {
+            "type": "string",
+            "description": "Fallback name if the chain has none."
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Fallback ticker if the chain has none."
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Fallback logo if the chain has none."
+          }
+        }
+      },
+      "RedirectResult": {
+        "type": "object",
+        "properties": {
+          "registered": {
+            "type": "boolean",
+            "description": "True once the strategy is attached."
+          },
+          "mint": {
+            "type": "string",
+            "description": "The coin."
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Its ticker.",
+            "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "description": "Its page."
+          },
+          "feeWallet": {
+            "type": "string",
+            "description": "When not registered: where the fees must go first.",
+            "nullable": true
+          },
+          "creator": {
+            "type": "string",
+            "description": "When not registered: who the fees currently go to.",
+            "nullable": true
+          }
+        }
+      },
+      "RobinhoodTerms": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "1 to 32 characters.",
+            "required": true
+          },
+          "symbol": {
+            "type": "string",
+            "description": "1 to 10 characters.",
+            "required": true
+          },
+          "pairToken": {
+            "type": "string",
+            "description": "A pair from /pairs `robinhood`. Omit or the zero address for ETH."
+          },
+          "creatorWallet": {
+            "type": "string",
+            "description": "The EVM wallet that signs and sends.",
+            "required": true
+          },
+          "devBuy": {
+            "type": "string",
+            "description": "Your own first buy, in ETH, as a decimal string. Part of the signed words when sent, so send the same value to submit."
+          },
+          "creatorTaxBps": {
+            "type": "integer",
+            "description": "A creator tax on every trade, basis points, up to 2000. Default 0. Part of the signed words when sent, so send the same value to submit."
+          }
+        }
+      },
+      "RobinhoodSubmit": {
+        "type": "object",
+        "description": "Everything in RobinhoodTerms, plus:",
+        "properties": {
+          "image": {
+            "type": "string",
+            "description": "The coin's logo as a data URL (`data:image/png;base64,…`). PNG, JPEG, WebP or GIF, 512KB max. Send this or `imageUrl`."
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "A public https link to the logo instead of `image`. Fetched by us under the same size and type rules."
+          },
+          "description": {
+            "type": "string",
+            "description": "Up to 500 characters. The coin's website in its metadata is always its purps.lol page; add your own links as `twitter` and `telegram`."
+          },
+          "twitter": {
+            "type": "string",
+            "description": "https:// link."
+          },
+          "telegram": {
+            "type": "string",
+            "description": "https:// link."
+          },
+          "ts": {
+            "type": "integer",
+            "description": "The `ts` the prepare step returned.",
+            "required": true
+          },
+          "signature": {
+            "type": "string",
+            "description": "Your wallet's signature over the prepared message. Base58 on Solana, 0x-hex on Robinhood Chain.",
+            "required": true
+          }
+        }
+      },
+      "RobinhoodBuild": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "type": "array",
+            "description": "Transactions to send in order: `{ label, tx: { to, data, value, chainId } }`.",
+            "items": {
+              "type": "object"
+            }
+          },
+          "walletKey": {
+            "type": "string",
+            "description": "Keep this: the register step needs it."
+          },
+          "feeRecipient": {
+            "type": "string",
+            "description": "The PURPS wallet the coin's fees will go to."
+          },
+          "requiredWei": {
+            "type": "string",
+            "description": "ETH the wallet needs for the whole flow, in wei."
+          },
+          "balanceWei": {
+            "type": "string",
+            "description": "What it holds now."
+          },
+          "shortByWei": {
+            "type": "string",
+            "description": "`0` when the wallet can afford it."
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Where the logo was stored."
+          },
+          "pair": {
+            "type": "object",
+            "description": "The pair the coin trades in."
+          },
+          "fees": {
+            "type": "object",
+            "description": "The fee setup."
+          }
+        }
+      },
+      "RobinhoodLaunch": {
+        "type": "object",
+        "properties": {
+          "txHash": {
+            "type": "string",
+            "description": "The launch transaction."
+          },
+          "token": {
+            "type": "string",
+            "description": "The coin's contract address."
+          },
+          "creatorWallet": {
+            "type": "string",
+            "description": "Who sent it."
+          },
+          "walletKey": {
+            "type": "string",
+            "description": "What the register step needs."
+          },
+          "name": {
+            "type": "string",
+            "description": "From the launch."
+          },
+          "symbol": {
+            "type": "string",
+            "description": "From the launch."
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "From the launch.",
+            "nullable": true
+          },
+          "pair": {
+            "type": "string",
+            "description": "The pair's ticker."
+          },
+          "registered": {
+            "type": "string",
+            "description": "The registered coin's address, or null.",
+            "nullable": true
+          }
+        }
+      },
+      "RobinhoodAsset": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "The token's contract address, lower-cased."
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Ticker."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "decimals": {
+            "type": "integer",
+            "description": "Token decimals."
+          },
+          "group": {
+            "type": "string",
+            "description": "`crypto`, `stock`, `etf` and so on."
+          },
+          "catalogue": {
+            "type": "boolean",
+            "description": "True when it is one of the site's listed pairs."
+          },
+          "iconUrl": {
+            "type": "string",
+            "description": "Logo.",
+            "nullable": true
+          }
+        }
+      },
+      "RobinhoodRegisterTerms": {
+        "type": "object",
+        "properties": {
+          "creatorWallet": {
+            "type": "string",
+            "description": "The wallet that sent the launch.",
+            "required": true
+          },
+          "txHash": {
+            "type": "string",
+            "description": "The launch transaction hash.",
+            "required": true
+          }
+        }
+      },
+      "RobinhoodRegisterSubmit": {
+        "type": "object",
+        "description": "Everything in RobinhoodRegisterTerms, plus:",
+        "properties": {
+          "walletKey": {
+            "type": "string",
+            "description": "From submit or from /robinhood/launches/{ref}.",
+            "required": true
+          },
+          "name": {
+            "type": "string",
+            "description": "The coin's name.",
+            "required": true
+          },
+          "symbol": {
+            "type": "string",
+            "description": "The coin's ticker.",
+            "required": true
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "The coin's logo.",
+            "nullable": true
+          },
+          "config": {
+            "$ref": "#/components/schemas/Strategy",
+            "type": "object",
+            "description": "The strategy to run.",
+            "required": true
+          },
+          "ts": {
+            "type": "integer",
+            "description": "The `ts` the prepare step returned.",
+            "required": true
+          },
+          "signature": {
+            "type": "string",
+            "description": "Your wallet's signature over the prepared message. Base58 on Solana, 0x-hex on Robinhood Chain.",
+            "required": true
+          }
+        }
+      },
+      "RobinhoodRegisterResult": {
+        "type": "object",
+        "properties": {
+          "registered": {
+            "type": "boolean",
+            "description": "True once the strategy is attached."
+          },
+          "alreadyRegistered": {
+            "type": "boolean",
+            "description": "True when this launch had a strategy attached before this call; nothing changed.",
+            "nullable": true
+          },
+          "mintAddress": {
+            "type": "string",
+            "description": "The coin's address.",
+            "nullable": true
+          },
+          "symbol": {
+            "type": "string",
+            "description": "Its ticker.",
+            "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "description": "Its page.",
+            "nullable": true
+          },
+          "curve": {
+            "type": "string",
+            "description": "The Pons curve contract the coin trades on, on a fresh registration.",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string",
+            "description": "When not registered: why not yet (`launch not confirmed yet`, `launch not indexed yet`, or the chain has no record of the transaction).",
+            "nullable": true
+          },
+          "dropped": {
+            "type": "boolean",
+            "description": "When not registered: true when the chain has no record of the transaction at all, so retrying will not help; false when it is simply not confirmed yet.",
+            "nullable": true
+          }
+        }
+      },
+      "StrategyTerms": {
+        "type": "object",
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/Strategy",
+            "type": "object",
+            "description": "The strategy to attach.",
+            "required": true
+          }
+        }
+      },
+      "StrategySubmit": {
+        "type": "object",
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/Strategy",
+            "type": "object",
+            "description": "Identical to what prepare received.",
+            "required": true
+          },
+          "ts": {
+            "type": "integer",
+            "description": "The `ts` the prepare step returned.",
+            "required": true
+          },
+          "signature": {
+            "type": "string",
+            "description": "Your wallet's signature over the prepared message. Base58 on Solana, 0x-hex on Robinhood Chain.",
+            "required": true
+          }
+        }
+      },
+      "StrategyResult": {
+        "type": "object",
+        "properties": {
+          "registered": {
+            "type": "boolean",
+            "description": "True once attached."
+          },
+          "mint": {
+            "type": "string",
+            "description": "The coin."
+          },
+          "url": {
+            "type": "string",
+            "description": "Its page."
+          }
+        }
+      },
+      "Authority": {
+        "type": "object",
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "The coin."
+          },
+          "url": {
+            "type": "string",
+            "description": "Its page."
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Whether this coin can be steered from outside at all: a purps.lol launch, not the flagship, with a strategy wired."
+          },
+          "reason": {
+            "type": "string",
+            "description": "When not available: why (`this coin is never steered from outside`, `not a launchpad coin`, `the coin has no strategy yet`).",
+            "nullable": true
+          },
+          "state": {
+            "type": "string",
+            "description": "`off` until the platform turns it on for the coin, `on` while the owner may steer it, `frozen` when an admin has stopped everyone.",
+            "enum": [
+              "off",
+              "on",
+              "frozen"
+            ]
+          },
+          "owner": {
+            "type": "string",
+            "description": "The wallet that owns the coin: whoever holds its creator rewards. The launching wallet until a handover, then whoever it was handed to.",
+            "nullable": true
+          },
+          "openToPublic": {
+            "type": "boolean",
+            "description": "Whether the platform is accepting requests for creator authority right now."
+          },
+          "pendingRequest": {
+            "type": "boolean",
+            "description": "Whether a request for authority on this coin is waiting for review."
+          },
+          "cooldowns": {
+            "type": "array",
+            "description": "Timers still running after a recent change, each `{ key, since, until }` with ISO 8601 times. `key` is `MARKET:kind` for one leg (e.g. `ETH:leverage`) or a bare kind for the coin as a whole.",
+            "items": {
+              "type": "object"
+            }
+          },
+          "marginHold": {
+            "type": "object",
+            "description": "Money parked on the exchange for a re-entry after a close or trim: `{ usdc, until }`. Null when nothing is parked.",
+            "nullable": true
+          },
+          "limits": {
+            "type": "object",
+            "description": "The platform's limits on what an owner may do.",
+            "properties": {
+              "maxLeverage": {
+                "type": "integer",
+                "description": "The most leverage an owner may set, whatever the market allows."
+              },
+              "actionsPerDay": {
+                "type": "integer",
+                "description": "Position actions allowed per coin in a rolling day."
+              },
+              "cooldownMinutes": {
+                "type": "integer",
+                "description": "How long a market, or the coin, waits after a change before the next."
+              },
+              "minDayVolumeUsd": {
+                "type": "number",
+                "description": "A market must have traded this much in the last day to be moved into."
+              },
+              "minOpenInterestUsd": {
+                "type": "number",
+                "description": "A market must carry this much open interest to be moved into."
+              },
+              "maxShareOfOiBps": {
+                "type": "integer",
+                "description": "A position may be at most this share of the market's open interest, in basis points."
+              },
+              "noteLength": {
+                "type": "object",
+                "description": "`{ min, max }` characters for the `note` on an action or strategy change."
+              }
+            }
+          }
+        }
+      },
+      "CoinChange": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable id."
+          },
+          "actor": {
+            "type": "string",
+            "description": "Who made it.",
+            "enum": [
+              "owner",
+              "admin"
+            ]
+          },
+          "wallet": {
+            "type": "string",
+            "description": "The owner's wallet. Null for an admin: their address is never published.",
+            "nullable": true
+          },
+          "kind": {
+            "type": "string",
+            "description": "What changed.",
+            "enum": [
+              "strategy",
+              "legs",
+              "close",
+              "swap",
+              "open",
+              "leverage",
+              "margin",
+              "trim",
+              "controls"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "description": "The change in one line, as the Changes tab shows it."
+          },
+          "status": {
+            "type": "string",
+            "description": "`applied` for a strategy or controls change; a position action is `queued` for the engine, then `done` or `failed`.",
+            "enum": [
+              "applied",
+              "queued",
+              "done",
+              "failed"
+            ]
+          },
+          "error": {
+            "type": "string",
+            "description": "Why a queued action failed.",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "The owner's reason, from the signed words.",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "ISO 8601."
+          }
+        }
+      },
+      "OwnerAction": {
+        "type": "object",
+        "description": "One action on one position. `action` picks the shape; the other fields depend on it. `close` { market, margin }. `trim` { market, pct, margin }. `swap` { market, to, direction, leverage }. `open` { market, direction, leverage, usdc? }. `leverage` { market, leverage, method, profit? }. `margin` { market, usdc, direction }. A market is one of the coin's legs (or, for `swap`, the `to` market is any market from /markets on the coin's venue).",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "What to do.",
+            "enum": [
+              "close",
+              "trim",
+              "swap",
+              "open",
+              "leverage",
+              "margin"
+            ],
+            "required": true
+          },
+          "market": {
+            "type": "string",
+            "description": "The leg to act on, e.g. `ETH`. 1 to 32 characters of letters, digits, `:`, `_` or `-`.",
+            "required": true
+          },
+          "margin": {
+            "type": "string",
+            "description": "`close` and `trim`: where the freed margin goes. `hold` parks it on the exchange for seven days for a re-entry; `home` pays it out through the buyback road.",
+            "enum": [
+              "hold",
+              "home"
+            ]
+          },
+          "pct": {
+            "type": "integer",
+            "description": "`trim`: how much of the position to close, 1 to 99 percent."
+          },
+          "to": {
+            "type": "string",
+            "description": "`swap`: the market to move into. The same market with the other `direction` is a flip."
+          },
+          "direction": {
+            "type": "string",
+            "description": "`swap` and `open`: `long` or `short`. `margin`: `add` moves money from the reserve into the position, `remove` moves it back.",
+            "enum": [
+              "long",
+              "short",
+              "add",
+              "remove"
+            ]
+          },
+          "leverage": {
+            "type": "integer",
+            "description": "`swap`, `open` and `leverage`: a whole number, 1 to 50, within the market's cap and the platform's `maxLeverage`."
+          },
+          "usdc": {
+            "type": "number",
+            "description": "`margin`: the dollars to move, at most 100000, in cents. `open`: how much of the parked money to open with; all of it when absent."
+          },
+          "method": {
+            "type": "string",
+            "description": "`leverage`: `resize` keeps the margin and buys or sells part of the position; `margin` keeps the size and moves money in or out of the reserve.",
+            "enum": [
+              "resize",
+              "margin"
+            ]
+          },
+          "profit": {
+            "type": "string",
+            "description": "`leverage` with `resize`, when lowering: the profit on the part sold goes `home` like any close, or stays in the position as margin with `keep`. The creator's share is paid either way.",
+            "enum": [
+              "home",
+              "keep"
+            ]
+          }
+        }
+      },
+      "AuthorityPrepare": {
+        "type": "object",
+        "properties": {
+          "wallet": {
+            "type": "string",
+            "description": "The Solana wallet that will sign: the coin's owner (from /coins/{mint}/authority), or a platform admin wallet.",
+            "required": true
+          },
+          "kind": {
+            "type": "string",
+            "description": "`action` acts on one position. `strategy` replaces the coin's whole strategy. `request` asks for creator authority on a coin from before it existed. `handover` hands the creator rewards, and the authority, to another wallet.",
+            "enum": [
+              "action",
+              "strategy",
+              "request",
+              "handover"
+            ],
+            "required": true
+          },
+          "action": {
+            "$ref": "#/components/schemas/OwnerAction",
+            "type": "object",
+            "description": "`action` only: what to do."
+          },
+          "config": {
+            "$ref": "#/components/schemas/Strategy",
+            "type": "object",
+            "description": "`strategy` only: the whole new config. Sent byte-for-byte the same to submit; its hash is in the message."
+          },
+          "note": {
+            "type": "string",
+            "description": "`action` and `strategy`: required, 3 to 140 characters on one line, your reason. It is in the signed words and holders read it. `request`: optional, up to 500 characters on one line. `handover`: none."
+          },
+          "payoutWallet": {
+            "type": "string",
+            "description": "`handover` only: the wallet to hand the coin to. A plain wallet, not the coin's own wallet or a platform wallet."
+          }
+        }
+      },
+      "AuthorityPrepared": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "As sent.",
+            "enum": [
+              "action",
+              "strategy",
+              "request",
+              "handover"
+            ]
+          },
+          "wallet": {
+            "type": "string",
+            "description": "The wallet that must sign."
+          },
+          "ts": {
+            "type": "integer",
+            "description": "Unix seconds. Send it back unchanged."
+          },
+          "nonce": {
+            "type": "string",
+            "description": "Starts with `api.`. Bound to this coin, this wallet and this exact action; good once; five minutes. Send it back unchanged."
+          },
+          "message": {
+            "type": "string",
+            "description": "The exact text to sign: ed25519 over the UTF-8 bytes, no prefix, no hashing. It reads as plain English (`does:` or `sets:` says what will happen, `why:` is your note) and is the consent."
+          },
+          "hash": {
+            "type": "string",
+            "description": "The hash of the action or config, as embedded in the message. Null for `request` and `handover`.",
+            "nullable": true
+          },
+          "expiresInSeconds": {
+            "type": "integer",
+            "description": "How long the signature stays valid. 300."
+          }
+        }
+      },
+      "AuthoritySubmit": {
+        "type": "object",
+        "description": "Everything in AuthorityPrepare, plus:",
+        "properties": {
+          "ts": {
+            "type": "integer",
+            "description": "The `ts` prepare returned.",
+            "required": true
+          },
+          "nonce": {
+            "type": "string",
+            "description": "The `nonce` prepare returned.",
+            "required": true
+          },
+          "signature": {
+            "type": "string",
+            "description": "The wallet's ed25519 signature over `message`, base58.",
+            "required": true
+          }
+        }
+      },
+      "AuthorityResult": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "As sent.",
+            "enum": [
+              "action",
+              "strategy",
+              "request",
+              "handover"
+            ]
+          },
+          "mint": {
+            "type": "string",
+            "description": "The coin."
+          },
+          "url": {
+            "type": "string",
+            "description": "Its page."
+          },
+          "queued": {
+            "type": "string",
+            "description": "`action`: the id of the command queued for the engine. Watch /coins/{mint}/changes for done or failed.",
+            "nullable": true
+          },
+          "changed": {
+            "type": "array",
+            "description": "`strategy`: the lines that differ from before, as the Changes tab shows them.",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "description": "`request`: the request's id.",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "`request`: the request's status, `pending` until reviewed.",
+            "nullable": true
+          },
+          "payoutWallet": {
+            "type": "string",
+            "description": "`handover`: the wallet that now holds the rewards. Null when handed back to the launching wallet.",
+            "nullable": true
+          }
+        }
+      }
+    }
+  }
+}

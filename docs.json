@@ -58,7 +58,8 @@
           {
             "group": "After launch",
             "pages": [
-              "guides/manage"
+              "guides/manage",
+              "guides/creator-authority"
             ],
             "icon": "settings-2"
           }
@@ -70,7 +71,7 @@
         "groups": [
           {
             "group": "Coins",
-            "openapi": "https://purps.lol/api/v1/openapi.json",
+            "openapi": "/openapi.json",
             "pages": [
               "GET /coins",
               "GET /coins/{mint}",
@@ -84,11 +85,10 @@
           },
           {
             "group": "Launch on purps.lol",
-            "openapi": "https://purps.lol/api/v1/openapi.json",
+            "openapi": "/openapi.json",
             "pages": [
               "GET /launch-options",
-              "POST /launches/prepare",
-              "POST /launches/submit",
+              "POST /launches",
               "GET /launches/{mint}",
               "POST /transactions/send",
               "GET /transactions/{signature}"
@@ -97,10 +97,9 @@
           },
           {
             "group": "Launch on pump.fun",
-            "openapi": "https://purps.lol/api/v1/openapi.json",
+            "openapi": "/openapi.json",
             "pages": [
-              "POST /pumpfun/prepare",
-              "POST /pumpfun/submit",
+              "POST /pumpfun/launches",
               "POST /pumpfun/fees",
               "POST /redirects",
               "POST /transactions/send",
@@ -110,7 +109,7 @@
           },
           {
             "group": "Redirect a pump.fun coin",
-            "openapi": "https://purps.lol/api/v1/openapi.json",
+            "openapi": "/openapi.json",
             "pages": [
               "GET /redirects/{mint}",
               "POST /pumpfun/fees",
@@ -122,7 +121,7 @@
           },
           {
             "group": "Launch on Robinhood Chain",
-            "openapi": "https://purps.lol/api/v1/openapi.json",
+            "openapi": "/openapi.json",
             "pages": [
               "POST /robinhood/launches/prepare",
               "POST /robinhood/launches/submit",
@@ -135,12 +134,23 @@
           },
           {
             "group": "Manage a coin",
-            "openapi": "https://purps.lol/api/v1/openapi.json",
+            "openapi": "/openapi.json",
             "pages": [
               "POST /coins/{mint}/strategy/prepare",
               "POST /coins/{mint}/strategy/submit"
             ],
             "icon": "sliders-horizontal"
+          },
+          {
+            "group": "Creator authority",
+            "openapi": "/openapi.json",
+            "pages": [
+              "GET /coins/{mint}/authority",
+              "GET /coins/{mint}/changes",
+              "POST /coins/{mint}/authority/prepare",
+              "POST /coins/{mint}/authority/submit"
+            ],
+            "icon": "shield-check"
           }
         ]
       }

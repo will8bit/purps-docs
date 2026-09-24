@@ -12,10 +12,10 @@ Robinhood Chain is an EVM chain, so there is no relay: you send the transactions
     `GET /launch-options` and look under `venues.robinhood`: who may launch, the creator tax range, and the payout assets holders can be paid in. Pairs are under `robinhood` in `GET /pairs`. A token not in the list can be checked with `GET /robinhood/assets/{address}`.
   </Step>
   <Step title="Prepare">
-    `POST /robinhood/launches/prepare` with `name`, `symbol`, `creatorWallet` and optionally `pairToken` (an `address` from `robinhood` in `/pairs`; the zero address or omitted means ETH). Sign `message` with `personal_sign`.
+    `POST /robinhood/launches/prepare` with `name`, `symbol`, `creatorWallet` and optionally `pairToken` (an `address` from `robinhood` in `/pairs`; the zero address or omitted means ETH), `devBuy` (ETH, decimal string) and `creatorTaxBps`. This is the one launch that still signs a message first: launching here is invite-only, and the signature is how the invite is checked before anything is spent. The message carries a `launches:` line saying the name, ticker, pair, creator tax and first buy in words; read it, then sign `message` with `personal_sign`.
   </Step>
   <Step title="Submit">
-    `POST /robinhood/launches/submit` with the same terms, the logo, socials, optionally `devBuy` (ETH, decimal string) and `creatorTaxBps`, plus `ts` and `signature`. Keep `walletKey` from the response.
+    `POST /robinhood/launches/submit` with the same terms (including the same `devBuy` and `creatorTaxBps`, which are part of what you signed), the logo, socials, `ts` and `signature`. Keep `walletKey` from the response.
   </Step>
   <Step title="Send the steps">
     Send each of `steps` from the creator wallet, in order, waiting for each receipt: an optional swap and approval when there is a dev buy in a token pair, then the launch. `requiredWei` tells you what the wallet needs; `shortByWei` is `0` when it has enough. The hash of the last step is the launch transaction.

@@ -7,8 +7,8 @@ icon: "key-round"
 
 There are no API keys. Your wallet is your identity, in two ways:
 
-- **Signed terms.** Launching a coin, registering a strategy: you sign a short text message that pins the exact terms. These calls come as a `prepare` / `submit` pair.
-- **Signed transactions.** Sending a launch, routing fees: the transaction itself is what you sign, in your wallet, and that is the authorisation. No message.
+- **Signed transactions.** Launching on purps.lol or pump.fun, routing fees, sending: the transaction itself is what you sign, in your wallet, and that is the authorisation. A launch is one call that returns unsigned transactions; there is no message.
+- **Signed terms.** Three things sign a short text message first, because the terms have to be agreed before anything happens on chain: a Robinhood Chain launch (invite-only, so the invite is checked before anything is spent), wiring a strategy onto a coin launched without one, and creator authority. These calls come as a `prepare` / `submit` pair.
 
 The pair works like this:
 
@@ -17,7 +17,7 @@ The pair works like this:
     `POST …/prepare` with the terms. It returns the exact text to sign as `message`, and `ts`, the timestamp embedded in it. Nothing is stored or spent.
   </Step>
   <Step title="Sign">
-    Sign `message` in your wallet. The message embeds a hash of the terms, so nothing can change between the two calls.
+    Read `message`, then sign it in your wallet. It spells the terms out in words next to their hash (a `launches:` or `sets:` line), so you read what you agree to and nothing can change between the two calls.
   </Step>
   <Step title="Submit">
     `POST …/submit` with the same terms, plus `ts` and `signature`. Signatures are valid for five minutes.
@@ -32,19 +32,19 @@ Sign the message's UTF-8 bytes with ed25519, exactly as a wallet's `signMessage`
 import nacl from "tweetnacl";
 import bs58 from "bs58";
 
-const { data } = await fetch("https://purps.lol/api/v1/launches/prepare", {
+const { data } = await fetch(`https://purps.lol/api/v2/coins/${mint}/strategy/prepare`, {
   method: "POST",
   headers: { "content-type": "application/json" },
-  body: JSON.stringify(terms),
+  body: JSON.stringify({ config }),
 }).then((r) => r.json());
 
 const bytes = new TextEncoder().encode(data.message);
 const signature = bs58.encode(nacl.sign.detached(bytes, keypair.secretKey));
 
-await fetch("https://purps.lol/api/v1/launches/submit", {
+await fetch(`https://purps.lol/api/v2/coins/${mint}/strategy/submit`, {
   method: "POST",
   headers: { "content-type": "application/json" },
-  body: JSON.stringify({ ...terms, image, ts: data.ts, signature }),
+  body: JSON.stringify({ config, ts: data.ts, signature }),
 });
 ```
 
@@ -60,13 +60,68 @@ const signature = await walletClient.signMessage({ message: data.message });
 
 Send the 0x-hex signature as returned. The wallet address in the message is lower-cased; send `creatorWallet` in any case and we lower-case it the same way.
 
+## Creator authority
+
+Steering a coin adds one thing: a `nonce`. Prepare issues it bound to the coin, the wallet that will sign and the exact action, it rides inside the signed words, and it is good once. Send it back with `ts` and `signature`. The message is plain English: a `does:` or `sets:` line says what will happen, `why:` is your note, and holders read both on the coin's Changes tab.
+
+One action, end to end, from a keypair file:
+
+```js
+import fs from "node:fs";
+import { Keypair } from "@solana/web3.js";
+import nacl from "tweetnacl";
+import bs58 from "bs58";
+
+const API = "https://purps.lol/api/v2";
+const owner = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync("owner.json", "utf8"))));
+const mint = "…";
+
+async function call(path, body) {
+  const res = await fetch(API + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : undefined);
+  const json = await res.json();
+  if (!json.ok) throw new Error(`${path}: ${json.error}`);
+  return json.data;
+}
+
+// what the coin allows right now
+const authority = await call(`/coins/${mint}/authority`);
+if (!authority.available || authority.state !== "on") throw new Error(authority.reason ?? `authority is ${authority.state}`);
+
+// 1. prepare: the wallet, the action, the reason
+const terms = {
+  wallet: owner.publicKey.toBase58(),
+  kind: "action",
+  action: { action: "close", market: "ETH", margin: "hold" },
+  note: "Taking ETH off ahead of the weekend",
+};
+const { ts, nonce, message } = await call(`/coins/${mint}/authority/prepare`, terms);
+console.log(message); // read it: it says exactly what will happen
+
+// 2. sign exactly that string
+const signature = bs58.encode(nacl.sign.detached(new TextEncoder().encode(message), owner.secretKey));
+
+// 3. submit
+const result = await call(`/coins/${mint}/authority/submit`, { ...terms, ts, nonce, signature });
+console.log("queued", result.queued);
+
+// 4. watch the Changes log until the engine reports back
+for (;;) {
+  const [latest] = await call(`/coins/${mint}/changes?limit=1`);
+  if (latest?.status === "done") break;
+  if (latest?.status === "failed") throw new Error(latest.error ?? "failed");
+  await new Promise((r) => setTimeout(r, 3000));
+}
+```
+
+The signature is checked against the wallet named in prepare: the coin's owner, or a platform admin wallet. Every check that guards money runs at submit, on the server's own figures, so a move the coin page would refuse is refused here too with a `422` and the reason.
+
 ## Transactions
 
-We never sign a transaction. On Solana, submit returns unsigned transactions as base64; you sign them and send them through `POST /transactions/send`, which only forwards to the launchpad programs. On Robinhood Chain, submit returns EVM transactions as `{ to, data, value, chainId }` steps that you send from your own wallet.
+We never sign a transaction. On Solana, a build returns unsigned transactions as base64; you sign them and send them through `POST /transactions/send`, which only forwards to the launchpad programs. On Robinhood Chain, submit returns EVM transactions as `{ to, data, value, chainId }` steps that you send from your own wallet.
 
 When a flow gives you more than one transaction, send them in order and **wait for each to confirm before sending the next**: a later one spends what an earlier one produced. `/transactions/send` waits up to 8 seconds and tells you `confirmed`; if false, poll `GET /transactions/{signature}` every couple of seconds until it is.
 
-A launch's create transaction also needs the mint keypair's signature. Submit returns it as `mintSecret`; it has no power beyond that one transaction.
+A launch's create transaction also needs the mint keypair's signature. The build returns it as `mintSecret`; it has no power beyond that one transaction.
 
 ```js
 import { Keypair, VersionedTransaction } from "@solana/web3.js";

@@ -7,18 +7,20 @@ icon: "book-open"
 
 PURPS is a launchpad where a coin's trading fees work for its holders. Fees are claimed automatically and either buy the coin back and burn it, are airdropped to holders, or fund perpetual futures positions whose profits go to holders.
 
-Everything the site does can be done through this API: read any coin's books, launch a coin on purps.lol, pump.fun or Robinhood Chain, and wire an existing pump.fun coin's fees into a strategy.
+Everything the site does can be done through this API: read any coin's books, launch a coin on purps.lol, pump.fun or Robinhood Chain, wire an existing pump.fun coin's fees into a strategy, and steer a coin you own.
+
+This is v2. The old `/api/v1` reads still answer, served by v2 with the same shapes; the old v1 write addresses answer `410` with a pointer here.
 
 ## First call
 
 <CodeGroup>
 
 ```bash curl
-curl "https://purps.lol/api/v1/coins?sort=newest&limit=3"
+curl "https://purps.lol/api/v2/coins?sort=newest&limit=3"
 ```
 
 ```js JavaScript
-const res = await fetch("https://purps.lol/api/v1/coins?sort=newest&limit=3");
+const res = await fetch("https://purps.lol/api/v2/coins?sort=newest&limit=3");
 const { ok, data } = await res.json();
 console.log(data.items.map((c) => `${c.symbol} $${Math.round(c.marketCapUsd)}`));
 ```
@@ -26,20 +28,20 @@ console.log(data.items.map((c) => `${c.symbol} $${Math.round(c.marketCapUsd)}`))
 ```python Python
 import requests
 
-r = requests.get("https://purps.lol/api/v1/coins", params={"sort": "newest", "limit": 3})
+r = requests.get("https://purps.lol/api/v2/coins", params={"sort": "newest", "limit": 3})
 for coin in r.json()["data"]["items"]:
     print(coin["symbol"], coin["marketCapUsd"])
 ```
 
 </CodeGroup>
 
-Every response is `{ "ok": true, "data": … }` or `{ "ok": false, "error": "…" }`. Base URL: `https://purps.lol/api/v1`.
+Every response is `{ "ok": true, "data": … }` or `{ "ok": false, "error": "…" }`. Base URL: `https://purps.lol/api/v2`.
 
 ## How it works
 
 <CardGroup cols={2}>
   <Card title="No keys" icon="key-round" href="/guides/signing">
-    A write is authorised by your own wallet's signature. Prepare, sign, submit.
+    A launch is one call; the transaction you sign is the proof. The few writes that need a message signature come as prepare, sign, submit.
   </Card>
   <Card title="Non-custodial" icon="shield-check" href="/guides/signing">
     We never see a private key. Transactions are built unsigned and signed in your wallet.
@@ -48,7 +50,7 @@ Every response is `{ "ok": true, "data": … }` or `{ "ok": false, "error": "…
     Once your launch lands, we see the pool on chain and mark the coin live within seconds.
   </Card>
   <Card title="Frozen shapes" icon="lock">
-    Fields may be added to v1. None will be renamed or removed.
+    Fields may be added to v2. None will be renamed or removed.
   </Card>
 </CardGroup>
 
@@ -70,8 +72,11 @@ Every response is `{ "ok": true, "data": … }` or `{ "ok": false, "error": "…
   <Card title="Manage a coin" icon="sliders-horizontal" href="/guides/manage">
     Attach a strategy to a coin launched without one.
   </Card>
+  <Card title="Creator authority" icon="shield-check" href="/guides/creator-authority">
+    Steer a coin you own: act on a position, change its strategy, hand it on. Every move signed and shown to holders.
+  </Card>
 </CardGroup>
 
 ## For agents
 
-An agent that lands on purps.lol reads [llms.txt](https://purps.lol/llms.txt) first: what PURPS is, every endpoint, and the flows. The full machine-readable spec is at [openapi.json](https://purps.lol/api/v1/openapi.json).
+An agent that lands on purps.lol reads [llms.txt](https://purps.lol/llms.txt) first: what PURPS is, every endpoint, and the flows. The full machine-readable spec is at [openapi.json](https://purps.lol/api/v2/openapi.json).

@@ -12,26 +12,38 @@ Every failure is `{ "ok": false, "error": "…" }` with a short reason in plain 
 | Status | Meaning |
 | --- | --- |
 | `400` | Something in the request is wrong. The reason says what. |
-| `401` | The signature is invalid or its timestamp is too old. |
+| `401` | The signature is invalid, its timestamp is too old, or the nonce was not issued for this wallet and action. |
 | `403` | The wallet may not do this yet, or the feature is not open. |
 | `404` | The coin, launch or transaction does not exist. |
 | `409` | The action does not fit the coin's state. |
-| `422` | The strategy or its parameters fail validation. |
-| `429` | Too many requests. Wait `Retry-After` seconds. |
-| `503` | We could not reach something we depend on. Retry shortly. |
+| `410` | An old `/api/v1` write address. Use `/api/v2`; v1 reads still answer. |
+| `413` | The body is too large. |
+| `422` | The strategy, its parameters or a money check fail validation. The reason says why. |
+| `423` | Creator authority on the coin is frozen. |
+| `429` | Too many requests, too many actions today, or a cooldown still running. Wait `Retry-After` seconds. |
+| `503` | We could not reach something we depend on, or the API is paused. |
+
+A `503` with a `Retry-After` header and the reason "paused for maintenance" means the whole API is switched off for a while. Nothing is wrong with your request; come back after the wait.
 
 ## Rate limits
 
-Limits are per address and per endpoint, in one-minute windows. Every response carries the standard headers:
+Limits are per address and per endpoint, in one-minute windows. Every response says what the limit is:
 
 ```
 RateLimit-Limit: 60
-RateLimit-Remaining: 41
-RateLimit-Reset: 23
 RateLimit-Policy: 60;w=60
 ```
 
-A `429` adds `Retry-After`. Each endpoint's limit is on its reference page. Reads are cached at the edge for a few seconds, so two calls in a row can return the same figures; writes are never cached.
+Responses that are not cached (writes, `prepare` and `submit`, every refusal) also say where you stand:
+
+```
+RateLimit-Remaining: 41
+RateLimit-Reset: 23
+```
+
+Cacheable reads leave those two out on purpose: an edge cache would otherwise hand one caller's remaining allowance to the next. A `429` adds `Retry-After`. Each endpoint's limit is on its reference page. Reads are cached at the edge for a few seconds, so two calls in a row can return the same figures; writes are never cached.
+
+Two budgets sit on top of the per-minute limits. Fetching a logo by `imageUrl` is allowed 20 times an hour per address and 200 an hour site-wide; when that runs out the build answers `429` and asks for `image` as a data URL instead, which is never budgeted. Creator authority counts position actions per coin per day and enforces cooldowns after each change; both are reported on `GET /coins/{mint}/authority`.
 
 ## Need more?
 

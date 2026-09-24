@@ -5,17 +5,14 @@ description: "A coin on pump.fun's own curve, with its creator fees wired into a
 icon: "flame"
 ---
 
-The coin is created on pump.fun with its on-chain creator set to the coin's PURPS wallet, so creator fees flow to the strategy from the start. Two signed transactions, then a registration. The complete example on the purps.lol page applies here with the paths changed.
+The coin is created on pump.fun with its on-chain creator set to the coin's PURPS wallet, so creator fees flow to the strategy from the start. One build call, two signed transactions, then a registration. No message to sign: the create transaction is the proof. The complete example on the purps.lol page applies here with the paths changed.
 
 <Steps>
   <Step title="Read the options">
     `GET /launch-options` and look under `venues.pumpfun`: who may launch, who may use a custom pair, and the payout assets. Pairs are under `pumpfun` in `GET /pairs`.
   </Step>
-  <Step title="Prepare">
-    `POST /pumpfun/prepare` with `name`, `symbol`, `creatorWallet`, and optionally `quoteMint` (from `pumpfun` in `/pairs`; SOL when omitted) and `devBuySol`. Sign `message`.
-  </Step>
-  <Step title="Submit">
-    `POST /pumpfun/submit` with the same terms, the logo, socials, `ts` and `signature`. Sign the returned `transactions` (the one at `createIndex` with the mint key too) and send them through `/transactions/send`, one at a time, waiting for each to confirm.
+  <Step title="Build">
+    `POST /pumpfun/launches` with `name`, `symbol`, `creatorWallet`, the logo (`image` as a data URL, or `imageUrl`), and optionally `quoteMint` (from `pumpfun` in `/pairs`; SOL when omitted), `devBuySol`, `description`, `twitter` and `telegram`. Sign the returned `transactions` (the one at `createIndex` with the mint key too) and send them through `/transactions/send`, one at a time, waiting for each to confirm.
   </Step>
   <Step title="Lock the fee routing">
     Once the create has confirmed: `POST /pumpfun/fees` with `mint` and `creatorWallet`. Sign and send the returned `transaction` the same way. This is pump.fun's fee-sharing config: once set, the coin's creator fees go to its PURPS wallet permanently. `done: true` means it was already set.
@@ -25,4 +22,4 @@ The coin is created on pump.fun with its on-chain creator set to the coin's PURP
   </Step>
 </Steps>
 
-The creator wallet needs about 0.04 SOL plus the dev buy (0.045 with a custom pair).
+The creator wallet needs about 0.04 SOL plus the dev buy (0.045 with a custom pair); the build checks that before uploading anything and answers `400` when it is short. Fetching the logo by `imageUrl` is budgeted at 20 an hour per address; when the build answers `429` about image fetches, send the bytes as `image` instead.

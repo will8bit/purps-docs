@@ -5,10 +5,16 @@ description: "Attach a strategy to a coin launched without one."
 icon: "sliders-horizontal"
 ---
 
-Signed by the launch's creator wallet, the same prepare-sign-submit way.
+Signed by the launch's creator wallet, the prepare-sign-submit way.
 
 ## Attach a strategy later
 
 A purps.lol coin launched with the `airdrop` or `split` preset can have a strategy attached afterwards. `POST /coins/{mint}/strategy/prepare` with `config`, sign, then `POST /coins/{mint}/strategy/submit` with the identical `config`, `ts` and `signature`. The `config` is the strategy object from the Solana launch guide, `payoutMint` and up to four `payoutMintsExtra` included.
 
+Prepare validates the `config` first: a malformed one is a `400` that names the field, so nothing is signed for nothing. The message it returns carries the strategy in words on a `sets:` line (the fee split, what profits do, the take-profit and dip-buy rules, the markets) next to its hash; read it before signing.
+
 A `creator`-preset launch cannot: its fee vault is owned by your wallet on chain and the strategy could never claim from it.
+
+## Changing a strategy that is already running
+
+That is [creator authority](/guides/creator-authority): the owner signs each change, and it is published on the coin's Changes tab.
