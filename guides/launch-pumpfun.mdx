@@ -9,7 +9,7 @@ The coin is created on pump.fun with its on-chain creator set to the coin's PURP
 
 <Steps>
   <Step title="Read the options">
-    `GET /launch-options` and look under `venues.pumpfun`: who may launch, who may use a custom pair, and the payout assets. Pairs are under `pumpfun` in `GET /pairs`.
+    `GET /launch-options` and look under `launchpads.pumpfun`: who may launch, who may use a custom pair, and the payout assets. Pairs are under `pumpfun` in `GET /pairs`.
   </Step>
   <Step title="Build">
     `POST /pumpfun/launches` with `name`, `symbol`, `creatorWallet`, the logo (`image` as a data URL, or `imageUrl`), and optionally `quoteMint` (from `pumpfun` in `/pairs`; SOL when omitted), `devBuySol`, `description`, `twitter` and `telegram`. Sign the returned `transactions` (the one at `createIndex` with the mint key too) and send them through `/transactions/send`, one at a time, waiting for each to confirm.

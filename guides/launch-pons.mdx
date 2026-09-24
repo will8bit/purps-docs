@@ -1,0 +1,53 @@
+---
+title: "Launch on Pons"
+sidebarTitle: "Launch on Pons"
+description: "A coin on Pons, Robinhood Chain's launchpad, paired with ETH or a listed token."
+icon: "feather"
+---
+
+Robinhood Chain is an EVM chain, so there is no relay: you send the transactions from your own wallet and tell us the hash.
+
+<Steps>
+  <Step title="Read the options">
+    `GET /launch-options` and look under `launchpads.pons`: who may launch, the creator tax range, and the payout assets holders can be paid in. Pairs are under `robinhood` in `GET /pairs`. A token not in the list can be checked with `GET /pons/assets/{address}`.
+  </Step>
+  <Step title="Prepare">
+    `POST /pons/launches/prepare` with `name`, `symbol`, `creatorWallet` and optionally `pairToken` (an `address` from `robinhood` in `/pairs`; the zero address or omitted means ETH), `devBuy` (ETH, decimal string) and `creatorTaxBps`. This is the one launch that still signs a message first: launching here is invite-only, and the signature is how the invite is checked before anything is spent. The message carries a `launches:` line saying the name, ticker, pair, creator tax and first buy in words; read it, then sign `message` with `personal_sign`.
+  </Step>
+  <Step title="Submit">
+    `POST /pons/launches/submit` with the same terms (including the same `devBuy` and `creatorTaxBps`, which are part of what you signed), the logo, socials, `ts` and `signature`. Keep `walletKey` from the response.
+  </Step>
+  <Step title="Send the steps">
+    Send each of `steps` from the creator wallet, in order, waiting for each receipt: an optional swap and approval when there is a dev buy in a token pair, then the launch. `requiredWei` tells you what the wallet needs; `shortByWei` is `0` when it has enough. The hash of the last step is the launch transaction.
+  </Step>
+  <Step title="Find the launch">
+    Once the launch transaction has succeeded, `GET /pons/launches/{txHash}` returns the token address, and the `walletKey` again if you lost it.
+  </Step>
+  <Step title="Register the strategy">
+    `POST /pons/register/prepare` with `creatorWallet` and `txHash`; sign. Then `POST /pons/register/submit` with `walletKey`, `name`, `symbol`, `imageUrl`, your strategy `config`, `ts` and `signature`. If `registered` is false with a reason, the launch is not indexed yet: wait a few seconds and retry. The `config` is the same shape as a Solana strategy launch: a paying coin names its asset in `payoutMint` and up to four more in `payoutMintsExtra`, each a `0x` address from the venue's `payoutAssets` or any token `GET /pons/assets/{address}` says is payable.
+  </Step>
+</Steps>
+
+## Sending a step
+
+Each step is `{ label, tx: { to, data, value, chainId } }`. With viem:
+
+```js
+import { createWalletClient, http, publicActions } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+
+const chain = {
+  id: steps[0].tx.chainId,
+  name: "Robinhood Chain",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: { default: { http: ["https://rpc.mainnet.chain.robinhood.com"] } },
+};
+const client = createWalletClient({ account: privateKeyToAccount(process.env.CREATOR_KEY), chain, transport: http() }).extend(publicActions);
+
+let txHash;
+for (const step of steps) {
+  txHash = await client.sendTransaction({ to: step.tx.to, data: step.tx.data, value: BigInt(step.tx.value) });
+  const receipt = await client.waitForTransactionReceipt({ hash: txHash });
+  if (receipt.status !== "success") throw new Error(`${step.label} reverted`);
+}
+```

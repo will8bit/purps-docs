@@ -50,7 +50,7 @@
             "pages": [
               "guides/launch-solana",
               "guides/launch-pumpfun",
-              "guides/launch-robinhood",
+              "guides/launch-pons",
               "guides/redirect"
             ],
             "icon": "sparkles"
@@ -120,15 +120,15 @@
             "icon": "corner-down-right"
           },
           {
-            "group": "Launch on Robinhood Chain",
+            "group": "Launch on Pons",
             "openapi": "/openapi.json",
             "pages": [
-              "POST /robinhood/launches/prepare",
-              "POST /robinhood/launches/submit",
-              "GET /robinhood/assets/{address}",
-              "GET /robinhood/launches/{ref}",
-              "POST /robinhood/register/prepare",
-              "POST /robinhood/register/submit"
+              "POST /pons/launches/prepare",
+              "POST /pons/launches/submit",
+              "GET /pons/assets/{address}",
+              "GET /pons/launches/{ref}",
+              "POST /pons/register/prepare",
+              "POST /pons/register/submit"
             ],
             "icon": "feather"
           },
