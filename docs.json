@@ -77,21 +77,26 @@
               "GET /coins/{mint}",
               "GET /index",
               "GET /search",
-              "GET /launches",
-              "GET /markets",
-              "GET /pairs"
+              "GET /launches"
             ],
             "icon": "coins"
+          },
+          {
+            "group": "Before you launch",
+            "openapi": "/openapi.json",
+            "pages": [
+              "GET /launch-options",
+              "GET /pairs",
+              "GET /markets"
+            ],
+            "icon": "list-checks"
           },
           {
             "group": "Launch on purps.lol",
             "openapi": "/openapi.json",
             "pages": [
-              "GET /launch-options",
               "POST /launches",
-              "GET /launches/{mint}",
-              "POST /transactions/send",
-              "GET /transactions/{signature}"
+              "GET /launches/{mint}"
             ],
             "icon": "/icons/purps.svg"
           },
@@ -100,22 +105,9 @@
             "openapi": "/openapi.json",
             "pages": [
               "POST /pumpfun/launches",
-              "POST /pumpfun/fees",
-              "POST /redirects",
-              "POST /transactions/send",
-              "GET /transactions/{signature}"
-            ],
-            "icon": "/icons/pumpfun.svg"
-          },
-          {
-            "group": "Redirect a pump.fun coin",
-            "openapi": "/openapi.json",
-            "pages": [
               "GET /redirects/{mint}",
               "POST /pumpfun/fees",
-              "POST /redirects",
-              "POST /transactions/send",
-              "GET /transactions/{signature}"
+              "POST /redirects"
             ],
             "icon": "/icons/pumpfun.svg"
           },
@@ -125,12 +117,21 @@
             "pages": [
               "POST /pons/launches/prepare",
               "POST /pons/launches/submit",
-              "GET /pons/assets/{address}",
               "GET /pons/launches/{ref}",
+              "GET /pons/assets/{address}",
               "POST /pons/register/prepare",
               "POST /pons/register/submit"
             ],
             "icon": "/icons/pons.svg"
+          },
+          {
+            "group": "Send a transaction",
+            "openapi": "/openapi.json",
+            "pages": [
+              "POST /transactions/send",
+              "GET /transactions/{signature}"
+            ],
+            "icon": "send"
           },
           {
             "group": "Manage a coin",
