@@ -7,16 +7,16 @@ icon: "shield-check"
 
 Creator authority lets the wallet that owns a purps.lol coin act on its positions, change its strategy, or hand the coin on. The owner is whoever holds the coin's creator rewards: the launching wallet until a handover, then whoever it was handed to. Every move is signed by that wallet, and every move is published on the coin's Changes tab with the reason you give.
 
-Money never leaves the coin here. A close or trim either parks the freed margin on the exchange for a re-entry or sends it home through the buyback road; the strategy's split and the holder payouts carry on as before.
+Money never leaves the coin here. A close or trim either parks the freed margin on the exchange for a re-entry or sends it home through the coin's normal road, where the platform's cut and the creator's share of a realised win are taken as always; the strategy's split and the holder payouts carry on as before.
 
 ## Before you start
 
 `GET /coins/{mint}/authority` says where things stand:
 
 - `available`: whether the coin can be steered from outside at all. It must be a purps.lol launch with a strategy wired, and not the flagship. `reason` says why not.
-- `state`: `off` until the platform turns it on for the coin, `on` while the owner may steer it, `frozen` when an admin has stopped everyone.
+- `state`: `on` while the owner may steer it (chosen at launch while authority was open, or turned on after a request), `off` otherwise, `frozen` when an admin has stopped everyone.
 - `owner`: the wallet that must sign.
-- `limits`: the most leverage an owner may set, how many position actions a coin gets a day, how long each change cools down, and the depth a market must have before the coin can be moved into it.
+- `limits`: the most leverage an owner may set, how many position actions a coin gets a day, how long each change cools down, the depth a market must have before the coin can be moved into it, and the note length.
 - `cooldowns` and `marginHold`: what is still running from the last change.
 
 A coin that chose `ownerControls: true` at launch has authority from the start, while the platform has it open. A coin from before that existed can ask with `kind: "request"`; it is reviewed by hand, and `pendingRequest` stays true until then.
@@ -28,13 +28,13 @@ A coin that chose `ownerControls: true` at launch has authority from the start, 
     One move on one position. `close` it (`margin: "hold"` parks the money for a re-entry, `"home"` pays it out), `trim` a percentage of it, `swap` it for another market or flip its side, `open` a leg that sits flat with what is parked for it, change its `leverage` (keep the margin and resize, or keep the size and move margin), or move `margin` between the position and the reserve. The exact shapes are in the OwnerAction schema on the reference page. A `note` of 3 to 140 characters is required: it is in the signed words and holders read it.
   </Step>
   <Step title="strategy">
-    Replace the whole strategy: the fee split, the take-profit and dip-buy rules, the markets and their leverage, the payout assets. Send the full `config`, the same shape as a launch strategy, plus a `note`. A leg with an open position keeps it; removing or flipping such a leg is refused, so the close goes through its own signed action first. The share that buys back or pays holders can rise, never fall below what the coin launched with. A coin that pays holders cannot switch to burning.
+    Replace the whole strategy: the fee split, the take-profit and dip-buy rules, the markets and their leverage, the payout assets. Send the full `config`, the same shape as a launch strategy, plus a `note`. A leg with an open position keeps it: removing or flipping such a leg is refused, so the close goes through its own signed action first, and its leverage stays at the exchange's current figure (change that with the `leverage` action, not here). The share that buys back or pays holders can rise, never fall below what the coin launched with. A coin that pays holders cannot switch to burning.
   </Step>
   <Step title="request">
     Ask for creator authority on a coin from before it existed. An optional `note` of up to 500 characters goes to the reviewer.
   </Step>
   <Step title="handover">
-    Hand the creator rewards, and the authority, to `payoutWallet`. Signed by whoever holds them now; afterwards only the new wallet can steer the coin or hand it on again. There is no undo from the old wallet.
+    Hand the creator rewards, and the authority, to `payoutWallet`. Signed by whoever holds them now; afterwards only the new wallet can steer the coin or hand it on again. There is no undo from the old wallet. Queued actions are cancelled; an action the engine is already running finishes.
   </Step>
 </Steps>
 
@@ -42,13 +42,13 @@ A coin that chose `ownerControls: true` at launch has authority from the start, 
 
 <Steps>
   <Step title="Prepare">
-    `POST /coins/{mint}/authority/prepare` with `wallet`, `kind` and the terms. You get `message`, `ts` and a `nonce` bound to this coin, this wallet and this exact action. Nothing is stored or spent. This step only refuses what can never work: the flagship, a coin with no strategy, a frozen coin, a malformed action or note.
+    `POST /coins/{mint}/authority/prepare` with `wallet`, `kind` and the terms. You get `message`, `ts` and a `nonce` bound to this coin, this wallet and this exact action for five minutes. Nothing is stored or spent. This step only refuses what can never work: the flagship, a coin with no strategy, a frozen coin, authority not on for the owner, a request while it is closed or already on, a malformed action or note.
   </Step>
   <Step title="Sign">
     Read `message`. It is plain English: `does:` (for an action) or `sets:` (for a strategy) says exactly what will happen, `why:` is your note, and the hash pins every field. That text is the consent. Sign exactly that string with the wallet you named: ed25519 over the UTF-8 bytes, sent as base58.
   </Step>
   <Step title="Submit">
-    `POST /coins/{mint}/authority/submit` with the same body plus `ts`, `nonce` and `signature`. The nonce only fits that wallet, coin and action, and a signature is good once. Every check that guards money runs here, on the server's own figures: the position as the exchange holds it this second, the market's cap and depth, the reserve free to spend. A refusal is a `422` with the reason; a cooldown or the day's action count is a `429` whose reason says how long.
+    `POST /coins/{mint}/authority/submit` with the same body plus `ts`, `nonce` and `signature`. The nonce only fits that wallet, coin and action, and a signature is good once; a nonce from the coin page is not accepted here. Every check that guards money runs here, on the server's own figures: the position as the exchange holds it this second, the market's cap and depth, the reserve free to spend. A refusal is a `422` with the reason; a cooldown or the day's action count is a `429` whose reason says how long.
   </Step>
   <Step title="Watch">
     An `action` answers `queued` with the engine command's id. `GET /coins/{mint}/changes` lists every change newest first; the row moves from `queued` to `done` or `failed` (with `error`) when the engine reports back. `GET /coins/{mint}` shows the position. A `strategy` change is applied at once and answers `changed`, the lines that differ.
@@ -84,12 +84,13 @@ ts:1758700000
 
 | Status | Why |
 | --- | --- |
-| `401` | The signature is not from the wallet named, the nonce was issued for another wallet or action, or five minutes passed. Call prepare again. |
-| `403` | Authority is not on for this coin, or the flagship. |
+| `400` | The action, config, note or wallet is malformed. The reason names the field. |
+| `401` | The signature is not from the wallet named, `ts`, `nonce` or `signature` is missing, the nonce was issued for another wallet or action, or five minutes passed. Call prepare again. |
+| `403` | Authority is not on for this coin, the flagship, a request while authority is closed to new coins, or a strategy that would pay holders while holder payouts are off. |
 | `404` | Not a purps.lol coin, or no strategy wired yet. |
-| `409` | The coin is not live, the market already has an action running, nothing changed, the signature was already used, or the request does not fit (already on, already waiting). |
-| `422` | A money check said no: too much leverage, a market too thin, not enough in the reserve, a position too large for the market. The reason says which. |
+| `409` | The coin is not live, the market already has an action running, nothing changed, the signature was already used, the owner or strategy changed while you were signing, the request does not fit (already on, already waiting, chosen at launch, or from an admin), or the handover names the current holder. |
+| `422` | A money check said no: too much leverage, a market too thin, not enough in the reserve, a position too large for the market, a builder-exchange market, a take-profit under 5%, a buyback share below what the coin launched with, a paying coin switching to burn, or a handover to a wallet that may not receive rewards. The reason says which. |
 | `423` | Authority on this coin is frozen. An admin lifts it. |
 | `429` | The day's action count is used up, or a cooldown is still running. The reason says how long. |
 
-Platform admin wallets can steer any coin the same way, and their address is never shown: the Changes tab reads "Admin". Nothing in the API says whether a given wallet is one.
+Platform admin wallets can act on positions and change strategies the same way; only the owner can ask for authority or hand the coin on. Their address is never shown: the Changes tab reads "Admin". Nothing in the v2 API says whether a given wallet is one.

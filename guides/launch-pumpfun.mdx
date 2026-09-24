@@ -5,7 +5,7 @@ description: "A coin on pump.fun's own curve, with its creator fees wired into a
 icon: "/icons/pumpfun.svg"
 ---
 
-The coin is created on pump.fun with its on-chain creator set to the coin's PURPS wallet, so creator fees flow to the strategy from the start. One build call, two signed transactions, then a registration. No message to sign: the create transaction is the proof. The complete example on the purps.lol page applies here with the paths changed.
+The coin is created on pump.fun with its on-chain creator set to the coin's PURPS wallet, so creator fees flow to the strategy from the start. One build call, two or three signed transactions, then a registration. No message to sign: the create transaction is the proof. The complete example on the purps.lol page applies here with the paths changed.
 
 <Steps>
   <Step title="Read the options">
@@ -15,11 +15,11 @@ The coin is created on pump.fun with its on-chain creator set to the coin's PURP
     `POST /pumpfun/launches` with `name`, `symbol`, `creatorWallet`, the logo (`image` as a data URL, or `imageUrl`), and optionally `quoteMint` (from `pumpfun` in `/pairs`; SOL when omitted), `devBuySol`, `description`, `twitter` and `telegram`. Sign the returned `transactions` (the one at `createIndex` with the mint key too) and send them through `/transactions/send`, one at a time, waiting for each to confirm.
   </Step>
   <Step title="Lock the fee routing">
-    Once the create has confirmed: `POST /pumpfun/fees` with `mint` and `creatorWallet`. Sign and send the returned `transaction` the same way. This is pump.fun's fee-sharing config: once set, the coin's creator fees go to its PURPS wallet permanently. `done: true` means it was already set.
+    Once the create has confirmed: `POST /pumpfun/fees` with `mint` and `creatorWallet`. Sign and send the returned `transaction` the same way. This is pump.fun's fee-sharing config: once set, the coin's creator fees go to its PURPS wallet permanently. `done: true` means the coin already has a fee-sharing config; `GET /redirects/{mint}` confirms it points at the PURPS wallet.
   </Step>
   <Step title="Register the strategy">
     `POST /redirects` with `mint` and your strategy `config`, built as on the purps.lol page and in the same shape as a Solana strategy launch, `payoutMint` and up to four `payoutMintsExtra` included. No signature needed: the fee routing you just locked on chain is the proof. If it answers `registered: false`, the chain has not shown us the routing yet: wait a few seconds and call it again. `registered: true` and the coin is live on purps.lol with its strategy running.
   </Step>
 </Steps>
 
-The creator wallet needs about 0.04 SOL plus the dev buy (0.045 with a custom pair); the build checks that before uploading anything and answers `400` when it is short. Fetching the logo by `imageUrl` is budgeted at 20 an hour per address; when the build answers `429` about image fetches, send the bytes as `image` instead.
+The creator wallet needs about 0.04 SOL plus the dev buy (0.045 with a custom pair); the build checks that before uploading anything (when it can read the balance) and answers `400` when it is short. Fetching the logo by `imageUrl` is budgeted at 20 an hour per address; when the build answers `429` about image fetches, send the bytes as `image` instead.

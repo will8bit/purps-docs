@@ -8,7 +8,7 @@ icon: "key-round"
 There are no API keys. Your wallet is your identity, in two ways:
 
 - **Signed transactions.** Launching on purps.lol or pump.fun, routing fees, sending: the transaction itself is what you sign, in your wallet, and that is the authorisation. A launch is one call that returns unsigned transactions; there is no message.
-- **Signed terms.** Three things sign a short text message first, because the terms have to be agreed before anything happens on chain: a Pons launch (invite-only, so the invite is checked before anything is spent), wiring a strategy onto a coin launched without one, and creator authority. These calls come as a `prepare` / `submit` pair.
+- **Signed terms.** Three things sign a short text message first, because the terms have to be agreed before anything happens on chain: a Pons launch (invite-only, so the invite is checked before anything is spent), wiring a strategy onto a coin (on purps.lol or a Pons launch), and creator authority. These calls come as a `prepare` / `submit` pair.
 
 The pair works like this:
 
@@ -62,7 +62,7 @@ Send the 0x-hex signature as returned. The wallet address in the message is lowe
 
 ## Creator authority
 
-Steering a coin adds one thing: a `nonce`. Prepare issues it bound to the coin, the wallet that will sign and the exact action, it rides inside the signed words, and it is good once. Send it back with `ts` and `signature`. The message is plain English: a `does:` or `sets:` line says what will happen, `why:` is your note, and holders read both on the coin's Changes tab.
+Steering a coin adds one thing: a `nonce`. Prepare issues it bound to the coin, the wallet that will sign and the exact action; it rides inside the signed words and lives five minutes, and the signature you send with it is good once. Send it back with `ts` and `signature`. The message is plain English: a `does:` or `sets:` line says what will happen, `why:` is your note, and holders read both on the coin's Changes tab.
 
 One action, end to end, from a keypair file:
 
@@ -125,7 +125,9 @@ A launch's create transaction also needs the mint keypair's signature. The build
 
 ```js
 import { Keypair, VersionedTransaction } from "@solana/web3.js";
+import bs58 from "bs58";
 
+// creatorKeypair is your wallet; build is the answer from POST /launches
 const tx = VersionedTransaction.deserialize(Buffer.from(build.transactions[build.createIndex], "base64"));
 tx.sign([creatorKeypair, Keypair.fromSecretKey(bs58.decode(build.mintSecret))]);
 const signed = Buffer.from(tx.serialize()).toString("base64");

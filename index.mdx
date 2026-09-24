@@ -44,10 +44,10 @@ Every response is `{ "ok": true, "data": … }` or `{ "ok": false, "error": "…
     A launch is one call; the transaction you sign is the proof. The few writes that need a message signature come as prepare, sign, submit.
   </Card>
   <Card title="Non-custodial" icon="shield-check" href="/guides/signing">
-    We never see a private key. Transactions are built unsigned and signed in your wallet.
+    We never hold your key. Transactions are built for your wallet to sign; a launch's throwaway mint key is handed to you as `mintSecret`, and the only signature we ever add is the launchpad's own memo co-sign on a purps.lol create.
   </Card>
   <Card title="Launches finish themselves" icon="rocket" href="/guides/launch-solana">
-    Once your launch lands, we see the pool on chain and mark the coin live within seconds.
+    Once your launch lands, we see the pool on chain and mark the coin live within half a minute.
   </Card>
   <Card title="Frozen shapes" icon="lock">
     Fields may be added to v2. None will be renamed or removed.

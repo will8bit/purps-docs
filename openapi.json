@@ -3,7 +3,7 @@
   "info": {
     "title": "PURPS API",
     "version": "2.0.0",
-    "description": "Everything purps.lol can do, as JSON. Read the coin list, a coin's full page and the launchpad; launch coins on purps.lol, pump.fun and Pons; wire an existing pump.fun coin's fees into a strategy; steer a coin you own. No key, no signup. A launch is one call that returns unsigned transactions: the launch transaction can only land with your wallet's signature, and that is the proof. The few writes that need a message signature (Pons launches, wiring a strategy onto a coin, creator authority) come as a prepare/submit pair. Every transaction is signed in your wallet, never by us. Every response is `{ ok: true, data }` or `{ ok: false, error }`. Cross-origin requests are allowed from any site. Cacheable reads carry `RateLimit-Limit` and `RateLimit-Policy`; uncached responses (writes, prepare and submit, refusals) carry `RateLimit-Remaining` and `RateLimit-Reset` as well."
+    "description": "Everything purps.lol can do, as JSON. Read the coin list, a coin's full page and the launchpad; launch coins on purps.lol, pump.fun and Pons; wire an existing pump.fun coin's fees into a strategy; steer a coin you own. No key, no signup. A launch is one call that returns unsigned transactions: the launch transaction can only land with your wallet's signature, and that is the proof. The few writes that need a message signature (Pons launches, wiring a strategy onto a coin, creator authority) come as a prepare/submit pair. Every transaction is signed in your wallet, never by us. Every response is `{ ok: true, data }` or `{ ok: false, error }`. Cross-origin requests are allowed from any site. Every answer from the API itself carries `RateLimit-Limit` and `RateLimit-Policy`; uncached ones (writes, prepare and submit, refusals) carry `RateLimit-Remaining` and `RateLimit-Reset` as well. The 503 while the API is paused and the 410 on old v1 write addresses carry neither."
   },
   "servers": [
     {
@@ -329,7 +329,7 @@
         ],
         "operationId": "listIndex",
         "summary": "Flat index",
-        "description": "Every coin's identity in one list, no market data. For indexers and agents that want the whole set in one call.",
+        "description": "The newest 500 coins' identities in one list, no market data. For indexers and agents that want the set in one call.",
         "x-rate-limit": "60 a minute",
         "x-cache": "60 seconds",
         "x-example": "/index",
@@ -840,7 +840,7 @@
                       ]
                     },
                     "data": {
-                      "$ref": "#/components/schemas/LaunchStatus"
+                      "$ref": "#/components/schemas/Launch"
                     }
                   }
                 }
@@ -1061,7 +1061,7 @@
         ],
         "operationId": "getRedirect",
         "summary": "Check a pump.fun coin",
-        "description": "Whether a pump.fun coin's creator fees already point at its PURPS wallet, who its creator is, and whether it is registered here. `feeWallet` is the address its fees must go to.",
+        "description": "Whether a pump.fun coin's creator fees already point at its PURPS wallet, who its creator is, and whether it is registered here. `feeWallet` is the address its fees must go to. Besides the per-address limit, 40 different coins a minute across every caller; past that it is a 429 for a moment.",
         "parameters": [
           {
             "name": "mint",
@@ -1166,6 +1166,16 @@
               }
             }
           },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Every failure carries the same envelope.",
             "content": {
@@ -1207,6 +1217,16 @@
             }
           },
           "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
             "description": "Every failure carries the same envelope.",
             "content": {
               "application/json": {
@@ -1370,7 +1390,27 @@
               }
             }
           },
+          "413": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
             "description": "Every failure carries the same envelope.",
             "content": {
               "application/json": {
@@ -1488,7 +1528,7 @@
         ],
         "operationId": "getPonsAsset",
         "summary": "Check a Pons payout asset",
-        "description": "Whether a Robinhood Chain token can be paid out to a Pons coin's holders, the way the create page checks a token pasted in by address: it must have a real Uniswap pool. Use the returned `address` as `payoutMint` in a Robinhood Chain strategy. The catalogue assets are in /pairs under `robinhood` with `payable`.",
+        "description": "Whether a Robinhood Chain token can be paid out to a Pons coin's holders, the way the create page checks a token pasted in by address: it must have a real Uniswap pool. Use the returned `address` as `payoutMint` in a Robinhood Chain strategy. The catalogue assets are in /pairs under `pons` with `payable`. ETH itself is the pair, never a payout asset: the zero address is a 404.",
         "parameters": [
           {
             "name": "address",
@@ -1576,7 +1616,7 @@
         ],
         "operationId": "preparePonsRegister",
         "summary": "Prepare the registration",
-        "description": "The message to sign to attach a strategy to a Pons launch you sent.",
+        "description": "The message to sign to attach a strategy to a Pons launch you sent. It carries the `walletKey` the coin will run on, the strategy in words on a `sets:` line and its hash, so send the same `walletKey` and `config` to submit, byte for byte.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1886,7 +1926,27 @@
               }
             }
           },
+          "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "401": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
             "description": "Every failure carries the same envelope.",
             "content": {
               "application/json": {
@@ -1927,6 +1987,16 @@
             }
           },
           "429": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
             "description": "Every failure carries the same envelope.",
             "content": {
               "application/json": {
@@ -2049,7 +2119,7 @@
           {
             "name": "before",
             "in": "query",
-            "description": "Only rows created before this ISO 8601 datetime, for paging.",
+            "description": "Only rows created before this ISO 8601 date-time in UTC, ending in Z (e.g. 2026-09-24T10:00:00Z), for paging.",
             "schema": {
               "type": "string"
             }
@@ -2252,7 +2322,7 @@
         ],
         "operationId": "submitAuthority",
         "summary": "Submit the signed change",
-        "description": "Step 2: the same body as prepare, plus `ts`, `nonce` and the wallet's `signature` over the message prepare returned (ed25519 over the UTF-8 bytes, base58). The signer must be the wallet named in prepare: the coin's owner, which is whoever holds its creator rewards, or a platform admin wallet. The nonce only fits the wallet, coin and exact action it was issued for, and a signature is good once. Every money check runs here on the server's own figures, so a change the coin page would refuse is refused here too. An `action` is queued for the engine and answers `queued` with the command id; watch /coins/{mint}/changes for done or failed, and /coins/{mint} for the position. A `strategy` change is applied at once and answers `changed`, the lines that differ. A `request` answers the request's `id` and `status`. A `handover` answers the new `payoutWallet`. Refusals: 401 for a bad signature, a nonce not issued for this wallet and action, or a timestamp older than five minutes; 403 when authority is not on for the coin; 409 when the coin is not live, the market already has an action running, nothing changed, or the signature was already used; 422 when a money check refuses it, with the reason; 423 frozen; 429 for the per-day action count or a cooldown still running; the reason says how long.",
+        "description": "Step 2: the same body as prepare, plus `ts`, `nonce` and the wallet's `signature` over the message prepare returned (ed25519 over the UTF-8 bytes, base58). The signer must be the wallet named in prepare: the coin's owner, which is whoever holds its creator rewards, or a platform admin wallet (admins act and change strategy; only the owner can ask for authority or hand the coin on). The nonce only fits the wallet, coin and exact action it was issued for and lives five minutes; a signature is good once. A malformed body is a 400 that names the field, before any signature is looked at. Every money check runs here on the server's own figures, so a change the coin page would refuse is refused here too. An `action` is queued for the engine and answers `queued` with the command id; watch /coins/{mint}/changes for done or failed, and /coins/{mint} for the position. A `strategy` change is applied at once and answers `changed`, the lines that differ. A `request` answers the request's `id` and `status`. A `handover` answers the new `payoutWallet`. Refusals: 401 for a bad signature, a nonce not issued for this wallet and action, or a timestamp older than five minutes; 403 when authority is not on for the coin; 409 when the coin is not live, the market already has an action running, nothing changed, or the signature was already used; 422 when a money check refuses it, with the reason; 423 frozen; 429 for the per-day action count or a cooldown still running; the reason says how long.",
         "parameters": [
           {
             "name": "mint",
@@ -2390,7 +2460,7 @@
         ],
         "operationId": "sendTransaction",
         "summary": "Send a signed transaction",
-        "description": "Relay a signed Solana transaction from a launch flow: the launch itself, the swap in front of it, the fee-routing step. Only those shapes are forwarded; anything else is refused. Waits up to 8 seconds for confirmation. `confirmed: false` means it was sent but not yet seen; poll /transactions/{signature}.",
+        "description": "Relay a signed Solana transaction from a launch flow: the launch itself, the swap in front of it, the fee-routing step. Only those shapes are forwarded; anything else is refused. Waits up to 8 seconds for confirmation. `confirmed: false` means it was sent but not yet seen; poll /transactions/{signature}. A refused transaction is a 400 whose `detail.code` is `expired` (the blockhash aged out: rebuild and sign again) or `rejected`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2612,7 +2682,7 @@
           },
           "origin": {
             "type": "string",
-            "description": "Where it came from. `pump` is a redirected pump.fun coin, `pumpfun` one launched through this site, `pons` a Pons launch on Robinhood Chain.",
+            "description": "Where it came from. `launchpad` is a purps.lol launch, `meteora` the PURPS flagship itself, `pumpfun` a pump.fun coin launched through this site, `pump` a redirected pump.fun coin, `pons` a Pons launch on Robinhood Chain.",
             "enum": [
               "launchpad",
               "pumpfun",
@@ -2851,7 +2921,7 @@
           },
           "origin": {
             "type": "string",
-            "description": "Where it came from.",
+            "description": "Where it came from: `launchpad` a purps.lol launch, `meteora` the PURPS flagship, `pumpfun` a pump.fun coin launched here, `pump` a redirected pump.fun coin, `pons` a Pons launch.",
             "enum": [
               "launchpad",
               "pumpfun",
@@ -2875,7 +2945,7 @@
           },
           "status": {
             "type": "string",
-            "description": "Coin status."
+            "description": "Coin status: `active` once running. A launch that has no strategy yet reports its launch status instead (`live` or `migrated`)."
           },
           "createdAt": {
             "type": "string",
@@ -2928,7 +2998,7 @@
           },
           "pair": {
             "type": "object",
-            "description": "The token this coin trades against, when it is not SOL.",
+            "description": "The token this coin trades against, its pair. Null only for a pump.fun coin on SOL; a purps.lol launch on SOL still names SOL.",
             "nullable": true,
             "properties": {
               "address": {
@@ -3065,15 +3135,18 @@
             "properties": {
               "tpTriggerPct": {
                 "type": "number",
-                "description": "Take profit every time the perp is up this much on its margin, percent."
+                "description": "Take profit every time the perp is up this much on its margin, percent.",
+                "nullable": true
               },
               "tpSlicePct": {
                 "type": "number",
-                "description": "How much of the position is sold each time, percent."
+                "description": "How much of the position is sold each time, percent.",
+                "nullable": true
               },
               "rungCount": {
                 "type": "integer",
-                "description": "How many dip buys the reserve funds."
+                "description": "How many dip buys the reserve funds.",
+                "nullable": true
               },
               "rungMode": {
                 "type": "string",
@@ -3167,7 +3240,7 @@
           },
           "status": {
             "type": "string",
-            "description": "`open`, `opening`, `closing` or `closed`, as the coin page lists them."
+            "description": "`open`, `opening`, `reducing`, `closing`, `closed` or `liquidated`, as the coin page lists them."
           },
           "size": {
             "type": "number",
@@ -3219,7 +3292,7 @@
           },
           "type": {
             "type": "string",
-            "description": "`fee_claim`, `buyback`, `burn`, `holder_payout`, `perp_open`, `launch`, `graduation` and others."
+            "description": "`fee_claim`, `buyback`, `burn`, `holder_payout`, `order_open`, `launch`, `graduation` and others."
           },
           "status": {
             "type": "string",
@@ -3314,7 +3387,7 @@
           },
           "priceQuote": {
             "type": "number",
-            "description": "Last price in the quote token.",
+            "description": "Last price in the pair token.",
             "nullable": true
           },
           "curvePct": {
@@ -3530,7 +3603,8 @@
           },
           "name": {
             "type": "string",
-            "description": "Display name."
+            "description": "Display name.",
+            "nullable": true
           },
           "decimals": {
             "type": "integer",
@@ -3538,7 +3612,7 @@
           },
           "group": {
             "type": "string",
-            "description": "`majors`, `stocks`, `memes` and so on."
+            "description": "`solana`, `stablecoin`, `stock` or `token`."
           },
           "iconUrl": {
             "type": "string",
@@ -3601,11 +3675,11 @@
           },
           "hash": {
             "type": "string",
-            "description": "Pons launch: the terms' hash, as embedded in the message. For your records."
+            "description": "Pons launch prepare only: the terms' hash, as embedded in the message. For your records."
           },
           "configHash": {
             "type": "string",
-            "description": "Strategy prepare: the hash of `config` exactly as you sent it, as embedded in the message."
+            "description": "Strategy and Pons register prepare only: the hash of `config` exactly as you sent it, as embedded in the message."
           }
         }
       },
@@ -3630,7 +3704,7 @@
           },
           "perpLegs": {
             "type": "array",
-            "description": "The positions to hold: `{ market, direction, leverage, weightBps, reserveMode }`. `market` from /markets, `leverage` a whole number within its cap, weights summing to 10000, `reserveMode` `defensive` or `none` (use the preset's `legReserveMode`). Empty means no perps, in which case margin and reserve must be 0.",
+            "description": "The positions to hold: `{ market, direction, leverage, weightBps, reserveMode }`. `market` from /markets, `leverage` a whole number within its cap, weights summing to 10000, `reserveMode` `defensive` or `none` (use the preset's `legReserveMode`); optional `takeProfitPct` and `stopLossPct` (percent, shown in the signed words when set) and `reserveTranches`. Empty means no perps, in which case margin and reserve must be 0.",
             "items": {
               "type": "object"
             },
@@ -3737,7 +3811,15 @@
           },
           "fees": {
             "type": "object",
-            "description": "The launchpad's fee terms: purps.lol has `platformBps`, `creatorFeeBps { min, max, default }` and `raiseTargetSol`; Pons has `creatorTaxBps { min, max, default }`."
+            "description": "The launchpad's fee terms: purps.lol has `platformBps`, `creatorFeeBps { min, max, default }` and `raiseTargetSol`; Pons has `creatorTaxBps { min, max, default }`. Absent for pump.fun."
+          },
+          "feeSplit": {
+            "type": "object",
+            "description": "purps.lol only: `{ note, totalBps }`, how to send your own three-way share instead of a preset."
+          },
+          "customPairAccess": {
+            "type": "object",
+            "description": "pump.fun only: `{ openToAll, allowedWallets }` for launching on a pair other than SOL."
           },
           "payoutAssets": {
             "type": "array",
@@ -3792,9 +3874,13 @@
             "type": "string",
             "description": "Ticker, e.g. `AAPLx`."
           },
+          "name": {
+            "type": "string",
+            "description": "Pons: the token's name."
+          },
           "kind": {
             "type": "string",
-            "description": "`crypto`, `stock`, `native` and so on."
+            "description": "`crypto`, `stock` and so on."
           },
           "market": {
             "type": "string",
@@ -3846,7 +3932,7 @@
           },
           "quoteMint": {
             "type": "string",
-            "description": "The pair, from /pairs `meteora`.",
+            "description": "The pair, from /pairs `purps`.",
             "required": true
           },
           "feePreset": {
@@ -3974,7 +4060,7 @@
         "properties": {
           "done": {
             "type": "boolean",
-            "description": "True when the fees are already routed and there is nothing to sign."
+            "description": "True when the coin already has a fee-sharing config on chain, so there is nothing to sign here. Check `redirected` on GET /redirects/{mint} to confirm it points at the PURPS wallet."
           },
           "transaction": {
             "type": "string",
@@ -4008,7 +4094,7 @@
           },
           "imageUrl": {
             "type": "string",
-            "description": "Where the logo was stored.",
+            "description": "Where the logo was stored, when this build uploaded one.",
             "nullable": true
           },
           "url": {
@@ -4126,7 +4212,7 @@
           },
           "imageUrl": {
             "type": "string",
-            "description": "Fallback logo if the chain has none."
+            "description": "Fallback logo if the chain has none: an http(s) link."
           }
         }
       },
@@ -4264,13 +4350,17 @@
             "type": "string",
             "description": "Where the logo was stored."
           },
+          "launchFee": {
+            "type": "string",
+            "description": "Pons's launch fee, in wei."
+          },
           "pair": {
             "type": "object",
-            "description": "The pair the coin trades in."
+            "description": "The pair the coin trades in: `{ address, symbol, decimals, graduationThreshold }`."
           },
           "fees": {
             "type": "object",
-            "description": "The fee setup."
+            "description": "The fee setup: `{ curveFeeBps, creatorTaxBps, maxCreatorTaxBps }`."
           }
         }
       },
@@ -4363,6 +4453,17 @@
             "type": "string",
             "description": "The launch transaction hash.",
             "required": true
+          },
+          "walletKey": {
+            "type": "string",
+            "description": "From submit or from /pons/launches/{ref}. In the signed words.",
+            "required": true
+          },
+          "config": {
+            "$ref": "#/components/schemas/Strategy",
+            "type": "object",
+            "description": "The strategy to run. In the signed words and hashed; send it to submit exactly as sent here.",
+            "required": true
           }
         }
       },
@@ -4370,11 +4471,6 @@
         "type": "object",
         "description": "Everything in PonsRegisterTerms, plus:",
         "properties": {
-          "walletKey": {
-            "type": "string",
-            "description": "From submit or from /pons/launches/{ref}.",
-            "required": true
-          },
           "name": {
             "type": "string",
             "description": "The coin's name.",
@@ -4387,14 +4483,8 @@
           },
           "imageUrl": {
             "type": "string",
-            "description": "The coin's logo.",
+            "description": "The coin's logo, an http(s) link.",
             "nullable": true
-          },
-          "config": {
-            "$ref": "#/components/schemas/Strategy",
-            "type": "object",
-            "description": "The strategy to run.",
-            "required": true
           },
           "ts": {
             "type": "integer",
@@ -4552,7 +4642,7 @@
           },
           "marginHold": {
             "type": "object",
-            "description": "Money parked on the exchange for a re-entry after a close or trim: `{ usdc, until }`. Null when nothing is parked.",
+            "description": "Money parked on the exchange for a re-entry after a close or trim: `{ usdc, until }`, `until` null when it has no end. Null when nothing is parked.",
             "nullable": true
           },
           "limits": {
@@ -4658,7 +4748,7 @@
       },
       "OwnerAction": {
         "type": "object",
-        "description": "One action on one position. `action` picks the shape; the other fields depend on it. `close` { market, margin }. `trim` { market, pct, margin }. `swap` { market, to, direction, leverage }. `open` { market, direction, leverage, usdc? }. `leverage` { market, leverage, method, profit? }. `margin` { market, usdc, direction }. A market is one of the coin's legs (or, for `swap`, the `to` market is any market from /markets on the coin's venue).",
+        "description": "One action on one position. `action` picks the shape; the other fields depend on it. `close` { market, margin }. `trim` { market, pct, margin }. `swap` { market, to, direction, leverage }. `open` { market, direction, leverage, usdc? }. `leverage` { market, leverage, method, profit? }. `margin` { market, usdc, direction }. A market is one of the coin's legs (or, for `swap`, the `to` market is any market from /markets on the coin's exchange). `usdc` amounts are dollars to the cent, at most 100,000.",
         "properties": {
           "action": {
             "type": "string",
@@ -4735,7 +4825,7 @@
         "properties": {
           "wallet": {
             "type": "string",
-            "description": "The Solana wallet that will sign: the coin's owner (from /coins/{mint}/authority), or a platform admin wallet.",
+            "description": "The Solana wallet that will sign: the coin's owner (from /coins/{mint}/authority), or a platform admin wallet for `action` and `strategy`.",
             "required": true
           },
           "kind": {
@@ -4792,7 +4882,7 @@
           },
           "nonce": {
             "type": "string",
-            "description": "Starts with `api.`. Bound to this coin, this wallet and this exact action; good once; five minutes. Send it back unchanged."
+            "description": "Starts with `api.`. Bound to this coin, this wallet and this exact action for five minutes; the signature you send with it is good once. Send it back unchanged."
           },
           "message": {
             "type": "string",

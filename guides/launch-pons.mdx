@@ -21,10 +21,10 @@ Robinhood Chain is an EVM chain, so there is no relay: you send the transactions
     Send each of `steps` from the creator wallet, in order, waiting for each receipt: an optional swap and approval when there is a dev buy in a token pair, then the launch. `requiredWei` tells you what the wallet needs; `shortByWei` is `0` when it has enough. The hash of the last step is the launch transaction.
   </Step>
   <Step title="Find the launch">
-    Once the launch transaction has succeeded, `GET /pons/launches/{txHash}` returns the token address, and the `walletKey` again if you lost it.
+    Once the launch transaction has succeeded, `GET /pons/launches/{ref}` with the hash (or the token address) returns the token address, and the `walletKey` again if you lost it.
   </Step>
   <Step title="Register the strategy">
-    `POST /pons/register/prepare` with `creatorWallet` and `txHash`; sign. Then `POST /pons/register/submit` with `walletKey`, `name`, `symbol`, `imageUrl`, your strategy `config`, `ts` and `signature`. If `registered` is false with a reason, the launch is not indexed yet: wait a few seconds and retry. The `config` is the same shape as a Solana strategy launch: a paying coin names its asset in `payoutMint` and up to four more in `payoutMintsExtra`, each a `0x` address from the launchpad's `payoutAssets` or any token `GET /pons/assets/{address}` says is payable.
+    `POST /pons/register/prepare` with `creatorWallet`, `txHash`, `walletKey` and your strategy `config`; the message says the strategy in words next to its hash. Sign it. Then `POST /pons/register/submit` with the same four fields plus `name`, `symbol`, `imageUrl` (an https link), `ts` and `signature`. If `registered` is false with a reason, the launch is not indexed yet: wait a few seconds and retry. The `config` is the same shape as a Solana strategy launch: a paying coin names its asset in `payoutMint` and up to four more in `payoutMintsExtra`, each a `0x` address from the launchpad's `payoutAssets` or any token `GET /pons/assets/{address}` says is payable.
   </Step>
 </Steps>
 
