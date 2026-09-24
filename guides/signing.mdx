@@ -8,7 +8,7 @@ icon: "key-round"
 There are no API keys. Your wallet is your identity, in two ways:
 
 - **Signed transactions.** Launching on purps.lol or pump.fun, routing fees, sending: the transaction itself is what you sign, in your wallet, and that is the authorisation. A launch is one call that returns unsigned transactions; there is no message.
-- **Signed terms.** Three things sign a short text message first, because the terms have to be agreed before anything happens on chain: a Robinhood Chain launch (invite-only, so the invite is checked before anything is spent), wiring a strategy onto a coin launched without one, and creator authority. These calls come as a `prepare` / `submit` pair.
+- **Signed terms.** Three things sign a short text message first, because the terms have to be agreed before anything happens on chain: a Pons launch (invite-only, so the invite is checked before anything is spent), wiring a strategy onto a coin launched without one, and creator authority. These calls come as a `prepare` / `submit` pair.
 
 The pair works like this:
 
@@ -117,7 +117,7 @@ The signature is checked against the wallet named in prepare: the coin's owner, 
 
 ## Transactions
 
-We never sign a transaction. On Solana, a build returns unsigned transactions as base64; you sign them and send them through `POST /transactions/send`, which only forwards to the launchpad programs. On Robinhood Chain, submit returns EVM transactions as `{ to, data, value, chainId }` steps that you send from your own wallet.
+We never sign a transaction. On Solana, a build returns unsigned transactions as base64; you sign them and send them through `POST /transactions/send`, which only forwards to the launchpad programs. On Pons, submit returns EVM transactions as `{ to, data, value, chainId }` steps that you send from your own wallet.
 
 When a flow gives you more than one transaction, send them in order and **wait for each to confirm before sending the next**: a later one spends what an earlier one produced. `/transactions/send` waits up to 8 seconds and tells you `confirmed`; if false, poll `GET /transactions/{signature}` every couple of seconds until it is.
 

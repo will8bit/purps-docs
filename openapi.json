@@ -1760,7 +1760,7 @@
         ],
         "operationId": "prepareStrategy",
         "summary": "Prepare a strategy",
-        "description": "For a purps.lol coin that was launched without a strategy (any preset but `creator`): the message the creator wallet signs to attach one now. The `config` is validated here and a malformed one is a 400 that says which field is wrong. The message carries a `sets:` line with the strategy in words (fee split, what profits do, take-profit and dip-buy rules, markets) next to its hash, so whoever signs reads the numbers.",
+        "description": "For a purps.lol coin that was launched without a strategy: the message the creator wallet signs to attach one now. Attaching routes the whole creator fee into it. Not possible for launches from before September 2026, whose fee vault is owned by the creator's wallet on chain. The `config` is validated here and a malformed one is a 400 that says which field is wrong. The message carries a `sets:` line with the strategy in words (fee split, what profits do, take-profit and dip-buy rules, markets) next to its hash, so whoever signs reads the numbers.",
         "parameters": [
           {
             "name": "mint",
@@ -2252,7 +2252,7 @@
         ],
         "operationId": "submitAuthority",
         "summary": "Submit the signed change",
-        "description": "Step 2: the same body as prepare, plus `ts`, `nonce` and the wallet's `signature` over the message prepare returned (ed25519 over the UTF-8 bytes, base58). The signer must be the wallet named in prepare: the coin's owner, which is whoever holds its creator rewards, or a platform admin wallet. The nonce only fits the wallet, coin and exact action it was issued for, and a signature is good once. Every money check runs here on the server's own figures, so a change the coin page would refuse is refused here too. An `action` is queued for the engine and answers `queued` with the command id; watch /coins/{mint}/changes for done or failed, and /coins/{mint} for the position. A `strategy` change is applied at once and answers `changed`, the lines that differ. A `request` answers the request's `id` and `status`. A `handover` answers the new `payoutWallet`. Refusals: 401 for a bad signature, a nonce not issued for this wallet and action, or a timestamp older than five minutes; 403 when authority is not on for the coin; 409 when the coin is not live, the market already has an action running, nothing changed, or the signature was already used; 422 when a money check refuses it, with the reason; 423 frozen; 429 for the per-day action count or a cooldown still running, with `Retry-After`.",
+        "description": "Step 2: the same body as prepare, plus `ts`, `nonce` and the wallet's `signature` over the message prepare returned (ed25519 over the UTF-8 bytes, base58). The signer must be the wallet named in prepare: the coin's owner, which is whoever holds its creator rewards, or a platform admin wallet. The nonce only fits the wallet, coin and exact action it was issued for, and a signature is good once. Every money check runs here on the server's own figures, so a change the coin page would refuse is refused here too. An `action` is queued for the engine and answers `queued` with the command id; watch /coins/{mint}/changes for done or failed, and /coins/{mint} for the position. A `strategy` change is applied at once and answers `changed`, the lines that differ. A `request` answers the request's `id` and `status`. A `handover` answers the new `payoutWallet`. Refusals: 401 for a bad signature, a nonce not issued for this wallet and action, or a timestamp older than five minutes; 403 when authority is not on for the coin; 409 when the coin is not live, the market already has an action running, nothing changed, or the signature was already used; 422 when a money check refuses it, with the reason; 423 frozen; 429 for the per-day action count or a cooldown still running; the reason says how long.",
         "parameters": [
           {
             "name": "mint",
@@ -2390,7 +2390,7 @@
         ],
         "operationId": "sendTransaction",
         "summary": "Send a signed transaction",
-        "description": "Relay a signed Solana transaction from a launch or a fee-routing step. Only transactions that touch the launchpad programs are forwarded; anything else is refused. Waits up to 8 seconds for confirmation. `confirmed: false` means it was sent but not yet seen; poll /transactions/{signature}.",
+        "description": "Relay a signed Solana transaction from a launch flow: the launch itself, the swap in front of it, the fee-routing step. Only those shapes are forwarded; anything else is refused. Waits up to 8 seconds for confirmation. `confirmed: false` means it was sent but not yet seen; poll /transactions/{signature}.",
         "requestBody": {
           "required": true,
           "content": {
@@ -3681,26 +3681,20 @@
             "type": "boolean",
             "description": "Whether coins may pay holders (`rewardMode` holders or backed) on any launchpad. When false, only burn coins register."
           },
-          "launchpads": {
+          "purps": {
+            "$ref": "#/components/schemas/LaunchpadOptions",
             "type": "object",
-            "description": "One entry per launchpad, each with what it allows.",
-            "properties": {
-              "purps": {
-                "$ref": "#/components/schemas/LaunchpadOptions",
-                "type": "object",
-                "description": "The purps.lol launchpad on Solana."
-              },
-              "pumpfun": {
-                "$ref": "#/components/schemas/LaunchpadOptions",
-                "type": "object",
-                "description": "pump.fun. Adds `customPairAccess`: who may launch on a pair other than SOL."
-              },
-              "pons": {
-                "$ref": "#/components/schemas/LaunchpadOptions",
-                "type": "object",
-                "description": "Pons on Robinhood Chain. Payout assets carry `address` instead of `mint`."
-              }
-            }
+            "description": "The purps.lol launchpad on Solana."
+          },
+          "pumpfun": {
+            "$ref": "#/components/schemas/LaunchpadOptions",
+            "type": "object",
+            "description": "pump.fun. Adds `customPairAccess`: who may launch on a pair other than SOL."
+          },
+          "pons": {
+            "$ref": "#/components/schemas/LaunchpadOptions",
+            "type": "object",
+            "description": "Pons on Robinhood Chain. Payout assets carry `address` instead of `mint`."
           },
           "presets": {
             "type": "array",

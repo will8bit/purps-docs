@@ -48,7 +48,7 @@ A coin that chose `ownerControls: true` at launch has authority from the start, 
     Read `message`. It is plain English: `does:` (for an action) or `sets:` (for a strategy) says exactly what will happen, `why:` is your note, and the hash pins every field. That text is the consent. Sign exactly that string with the wallet you named: ed25519 over the UTF-8 bytes, sent as base58.
   </Step>
   <Step title="Submit">
-    `POST /coins/{mint}/authority/submit` with the same body plus `ts`, `nonce` and `signature`. The nonce only fits that wallet, coin and action, and a signature is good once. Every check that guards money runs here, on the server's own figures: the position as the exchange holds it this second, the market's cap and depth, the reserve free to spend. A refusal is a `422` with the reason; a cooldown or the day's action count is a `429` with `Retry-After`.
+    `POST /coins/{mint}/authority/submit` with the same body plus `ts`, `nonce` and `signature`. The nonce only fits that wallet, coin and action, and a signature is good once. Every check that guards money runs here, on the server's own figures: the position as the exchange holds it this second, the market's cap and depth, the reserve free to spend. A refusal is a `422` with the reason; a cooldown or the day's action count is a `429` whose reason says how long.
   </Step>
   <Step title="Watch">
     An `action` answers `queued` with the engine command's id. `GET /coins/{mint}/changes` lists every change newest first; the row moves from `queued` to `done` or `failed` (with `error`) when the engine reports back. `GET /coins/{mint}` shows the position. A `strategy` change is applied at once and answers `changed`, the lines that differ.
@@ -90,6 +90,6 @@ ts:1758700000
 | `409` | The coin is not live, the market already has an action running, nothing changed, the signature was already used, or the request does not fit (already on, already waiting). |
 | `422` | A money check said no: too much leverage, a market too thin, not enough in the reserve, a position too large for the market. The reason says which. |
 | `423` | Authority on this coin is frozen. An admin lifts it. |
-| `429` | The day's action count is used up, or a cooldown is still running. |
+| `429` | The day's action count is used up, or a cooldown is still running. The reason says how long. |
 
 Platform admin wallets can steer any coin the same way, and their address is never shown: the Changes tab reads "Admin". Nothing in the API says whether a given wallet is one.

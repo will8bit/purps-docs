@@ -93,7 +93,7 @@
               "POST /transactions/send",
               "GET /transactions/{signature}"
             ],
-            "icon": "sun"
+            "icon": "/icons/purps.svg"
           },
           {
             "group": "Launch on pump.fun",
@@ -105,7 +105,7 @@
               "POST /transactions/send",
               "GET /transactions/{signature}"
             ],
-            "icon": "flame"
+            "icon": "/icons/pumpfun.svg"
           },
           {
             "group": "Redirect a pump.fun coin",
@@ -117,7 +117,7 @@
               "POST /transactions/send",
               "GET /transactions/{signature}"
             ],
-            "icon": "corner-down-right"
+            "icon": "/icons/pumpfun.svg"
           },
           {
             "group": "Launch on Pons",
@@ -130,7 +130,7 @@
               "POST /pons/register/prepare",
               "POST /pons/register/submit"
             ],
-            "icon": "feather"
+            "icon": "/icons/pons.svg"
           },
           {
             "group": "Manage a coin",

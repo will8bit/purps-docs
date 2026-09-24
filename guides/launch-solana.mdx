@@ -22,7 +22,7 @@ There is no message to sign. The launch transaction can only land with your wall
 
 <Steps>
   <Step title="Read the options">
-    `GET /launch-options` and look under `launchpads.purps`: who may launch, the fee tiers, and the payout assets. The three strategy presets and the airdrop-only config sit at the top level. `GET /pairs` lists the pairs (SOL is `So11111111111111111111111111111111111111112`); `GET /markets` the perp markets and their leverage caps.
+    `GET /launch-options` and look under `purps`: who may launch, the fee tiers, and the payout assets. The three strategy presets and the airdrop-only config sit at the top level. `GET /pairs` lists the pairs (SOL is `So11111111111111111111111111111111111111112`); `GET /markets` the perp markets and their leverage caps.
   </Step>
   <Step title="Build">
     `POST /launches` with `name`, `symbol`, `quoteMint`, `feePreset`, `creatorWallet`, the logo (`image` as a data URL, or `imageUrl`), and optionally `feeSplit`, `devBuySol`, `creatorFeeBps`, `strategy`, `description`, `twitter` and `telegram`. We upload the metadata, build the transactions and record the launch as pending. A wallet the launchpad does not admit is refused before anything is uploaded.
