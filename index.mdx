@@ -47,7 +47,7 @@ Every response is `{ "ok": true, "data": … }` or `{ "ok": false, "error": "…
     We never hold your key. Transactions are built for your wallet to sign; a launch's throwaway mint key is handed to you as `mintSecret`, and the only signature we ever add is the launchpad's own memo co-sign on a purps.lol create.
   </Card>
   <Card title="Launches finish themselves" icon="rocket" href="/guides/launch-solana">
-    Once your launch lands, we see the pool on chain and mark the coin live within half a minute.
+    Once your launch lands, we see it on chain, mark the coin live and attach the strategy you sent with the build, on every launchpad. A strategy is a preset and the markets: `{ preset: "balanced", markets: ["ETH"] }`.
   </Card>
   <Card title="Frozen shapes" icon="lock">
     Fields may be added to v2. None will be renamed or removed.
@@ -61,10 +61,10 @@ Every response is `{ "ok": true, "data": … }` or `{ "ok": false, "error": "…
     A coin on a Meteora curve, paired with SOL or any listed token, with fees to holders, to you, or into a strategy.
   </Card>
   <Card title="Launch on pump.fun" icon="/icons/pumpfun.svg" href="/guides/launch-pumpfun">
-    pump.fun's own curve, with creator fees wired into a strategy from the first trade.
+    pump.fun's own curve, with creator fees wired into a strategy from the first trade. One build, two signed transactions, and we register the strategy.
   </Card>
   <Card title="Launch on Pons" icon="/icons/pons.svg" href="/guides/launch-pons">
-    An EVM coin on Pons, Robinhood Chain's launchpad, paired with ETH or a listed token.
+    An EVM coin on Pons, Robinhood Chain's launchpad, paired with ETH or a listed token. One signed message, the steps to send, and we attach the strategy.
   </Card>
   <Card title="Redirect a pump.fun coin" icon="/icons/pumpfun.svg" href="/guides/redirect">
     Point an existing pump.fun coin's fees at a strategy.

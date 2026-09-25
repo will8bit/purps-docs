@@ -8,7 +8,7 @@ icon: "key-round"
 There are no API keys. Your wallet is your identity, in two ways:
 
 - **Signed transactions.** Launching on purps.lol or pump.fun, routing fees, sending: the transaction itself is what you sign, in your wallet, and that is the authorisation. A launch is one call that returns unsigned transactions; there is no message.
-- **Signed terms.** Three things sign a short text message first, because the terms have to be agreed before anything happens on chain: a Pons launch (invite-only, so the invite is checked before anything is spent), wiring a strategy onto a coin (on purps.lol or a Pons launch), and creator authority. These calls come as a `prepare` / `submit` pair.
+- **Signed terms.** Three things sign a short text message first, because the terms have to be agreed before anything happens on chain: a Pons launch (invite-only, so the invite is checked before anything is spent; the one message covers the launch and its strategy), wiring a strategy onto a coin launched without one (on purps.lol, or a Pons launch made without a config), and creator authority. These calls come as a `prepare` / `submit` pair.
 
 The pair works like this:
 
@@ -17,7 +17,7 @@ The pair works like this:
     `POST …/prepare` with the terms. It returns the exact text to sign as `message`, and `ts`, the timestamp embedded in it. Nothing is stored or spent.
   </Step>
   <Step title="Sign">
-    Read `message`, then sign it in your wallet. It spells the terms out in words next to their hash (a `launches:` or `sets:` line), so you read what you agree to and nothing can change between the two calls.
+    Read `message`, then sign it in your wallet. It spells the terms out in words next to their hash (a `launches:` or `sets:` line), so you read what you agree to and nothing can change between the two calls. A strategy sent the short way (`{ preset, markets }`) is expanded first, so the words and the hash describe the full strategy it becomes.
   </Step>
   <Step title="Submit">
     `POST …/submit` with the same terms, plus `ts` and `signature`. Signatures are valid for five minutes.
@@ -32,6 +32,7 @@ Sign the message's UTF-8 bytes with ed25519, exactly as a wallet's `signMessage`
 import nacl from "tweetnacl";
 import bs58 from "bs58";
 
+const config = { preset: "balanced", markets: ["ETH"] };
 const { data } = await fetch(`https://purps.lol/api/v2/coins/${mint}/strategy/prepare`, {
   method: "POST",
   headers: { "content-type": "application/json" },

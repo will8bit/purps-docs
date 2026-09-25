@@ -5,28 +5,43 @@ description: "A coin on Pons, Robinhood Chain's launchpad, paired with ETH or a 
 icon: "/icons/pons.svg"
 ---
 
-Robinhood Chain is an EVM chain, so there is no relay: you send the transactions from your own wallet and tell us the hash.
+Robinhood Chain is an EVM chain, so there is no relay: you send the transactions from your own wallet. One signed message covers the launch and its strategy; once the launch lands, we attach the strategy ourselves.
 
 <Steps>
   <Step title="Read the options">
-    `GET /launch-options` and look under `pons`: who may launch, the creator tax range, and the payout assets holders can be paid in. Pairs are under `pons` in `GET /pairs`. A token not in the list can be checked with `GET /pons/assets/{address}`.
+    `GET /launch-options` and look under `pons`: who may launch, the creator tax range, and the payout assets holders can be paid in. Pairs are under `pons` in `GET /pairs`. A token not in the list can be checked with `GET /pons/assets/{address}`. Perp markets are in `GET /markets`.
   </Step>
   <Step title="Prepare">
-    `POST /pons/launches/prepare` with `name`, `symbol`, `creatorWallet` and optionally `pairToken` (an `address` from `pons` in `/pairs`; the zero address or omitted means ETH), `devBuy` (ETH, decimal string) and `creatorTaxBps`. This is the one launch that still signs a message first: launching here is invite-only, and the signature is how the invite is checked before anything is spent. The message carries a `launches:` line saying the name, ticker, pair, creator tax and first buy in words; read it, then sign `message` with `personal_sign`.
+    `POST /pons/launches/prepare` with `name`, `symbol`, `creatorWallet`, the `config`, and optionally `pairToken` (an `address` from `pons` in `/pairs`; the zero address or omitted means ETH), `devBuy` (ETH, decimal string) and `creatorTaxBps`.
+
+    The config is a preset and the markets:
+
+    ```json
+    { "preset": "balanced", "markets": ["ETH"] }
+    ```
+
+    That is the same strategy the create page builds from the same choices; the [purps.lol guide](/guides/launch-solana#a-strategy-launch) has every option, and the full config is accepted too. A paying coin names its asset in `payoutMint` as a `0x` address from the launchpad's `payoutAssets`, or any token `GET /pons/assets/{address}` says is payable. A malformed config is a `400` here, so nothing is signed for nothing.
+
+    This is the one launch that still signs a message first: launching here is invite-only, and the signature is how the invite is checked before anything is spent. The message carries a `launches:` line saying the name, ticker, pair, creator tax and first buy in words, a `sets:` line saying the strategy in words, and a `launch:` hash that covers both. Read it, then sign `message` with `personal_sign`.
   </Step>
   <Step title="Submit">
-    `POST /pons/launches/submit` with the same terms (including the same `devBuy` and `creatorTaxBps`, which are part of what you signed), the logo, socials, `ts` and `signature`. Keep `walletKey` from the response.
+    `POST /pons/launches/submit` with the same terms (including the same `devBuy`, `creatorTaxBps` and `config`, which are part of what you signed), the logo, socials, `ts` and `signature`. The config is checked in full here (markets and leverage, payout assets, holder payouts open) before the logo is uploaded; a refusal says why. The response carries the `steps` to send and the coin's `walletKey`.
   </Step>
   <Step title="Send the steps">
     Send each of `steps` from the creator wallet, in order, waiting for each receipt: an optional swap and approval when there is a dev buy in a token pair, then the launch. `requiredWei` tells you what the wallet needs; `shortByWei` is `0` when it has enough. The hash of the last step is the launch transaction.
   </Step>
-  <Step title="Find the launch">
-    Once the launch transaction has succeeded, `GET /pons/launches/{ref}` with the hash (or the token address) returns the token address, and the `walletKey` again if you lost it.
-  </Step>
-  <Step title="Register the strategy">
-    `POST /pons/register/prepare` with `creatorWallet`, `txHash`, `walletKey` and your strategy `config`; the message says the strategy in words next to its hash. Sign it. Then `POST /pons/register/submit` with the same four fields plus `name`, `symbol`, `imageUrl` (an https link), `ts` and `signature`. If `registered` is false with a reason, the launch is not indexed yet: wait a few seconds and retry. The `config` is the same shape as a Solana strategy launch: a paying coin names its asset in `payoutMint` and up to four more in `payoutMintsExtra`, each a `0x` address from the launchpad's `payoutAssets` or any token `GET /pons/assets/{address}` says is payable.
+  <Step title="Done">
+    We watch the chain for the launch from your wallet whose fees point at this coin's wallet, and attach the strategy ourselves within about 15 seconds of it confirming; you do not need to stay online. Poll `GET /pons/launches/{ref}` with the launch hash (or the token address) until `registered` carries the coin's address, then `GET /coins/{mint}`.
   </Step>
 </Steps>
+
+## A launch without a config
+
+A launch built without `config`, or made outside the API, is registered by hand, with a second signed message:
+
+1. `GET /pons/launches/{ref}` with the launch hash returns the token address and the `walletKey`.
+2. `POST /pons/register/prepare` with `creatorWallet`, `txHash`, `walletKey` and the `config` (the short form above, or the full one). The message says the strategy in words on a `sets:` line next to its hash. Sign it.
+3. `POST /pons/register/submit` with the same four fields plus `name`, `symbol`, `imageUrl` (an https link), `ts` and `signature`. If `registered` is false with a reason, the launch is not indexed yet: wait a few seconds and retry.
 
 ## Sending a step
 
@@ -51,3 +66,7 @@ for (const step of steps) {
   if (receipt.status !== "success") throw new Error(`${step.label} reverted`);
 }
 ```
+
+<Note>
+If a strategy sent with the build could not be attached, the lookup says so: `strategy.status` is `refused` with the reason on `GET /pons/launches/{ref}`, `waiting` until the chain shows what it needs, `attached` once done.
+</Note>

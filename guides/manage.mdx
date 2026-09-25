@@ -9,9 +9,9 @@ Signed by the launch's creator wallet, the prepare-sign-submit way.
 
 ## Attach a strategy later
 
-A purps.lol coin launched without a strategy can have one attached afterwards; from then on the whole creator fee goes into it. `POST /coins/{mint}/strategy/prepare` with `config`, sign, then `POST /coins/{mint}/strategy/submit` with the identical `config`, `ts` and `signature`. The `config` is the strategy object from the Solana launch guide, `payoutMint` and up to four `payoutMintsExtra` included.
+A purps.lol coin launched without a strategy can have one attached afterwards; from then on the whole creator fee goes into it. `POST /coins/{mint}/strategy/prepare` with `config`, sign, then `POST /coins/{mint}/strategy/submit` with the same `config`, `ts` and `signature`. The `config` is a preset and the markets, `{ "preset": "balanced", "markets": ["ETH"] }`, with every option on the [purps.lol page](/guides/launch-solana#a-strategy-launch); the full config is accepted too.
 
-Prepare validates the `config` first: a malformed one is a `400` that names the field, so nothing is signed for nothing. The message it returns carries the strategy in words on a `sets:` line (the fee split, what profits do, the take-profit and dip-buy rules, the markets) next to its hash; read it before signing.
+Prepare validates the `config` first: a malformed one is a `400` that names the field, so nothing is signed for nothing. The message it returns carries the strategy in words on a `sets:` line (the fee split, what profits do, the take-profit and dip-buy rules, the markets) next to its hash; read it before signing. A short form is expanded before the words and the hash are made, so the message describes the full strategy it becomes, and sending the same short form to submit gives the same hash.
 
 Launches from before September 2026 cannot: their fee vault is owned by the creator's wallet on chain and the strategy could never claim from it.
 

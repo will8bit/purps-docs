@@ -3,7 +3,7 @@
   "info": {
     "title": "PURPS API",
     "version": "2.0.0",
-    "description": "Everything purps.lol can do, as JSON. Read the coin list, a coin's full page and the launchpad; launch coins on purps.lol, pump.fun and Pons; wire an existing pump.fun coin's fees into a strategy; steer a coin you own. No key, no signup. A launch is one call that returns unsigned transactions: the launch transaction can only land with your wallet's signature, and that is the proof. The few writes that need a message signature (Pons launches, wiring a strategy onto a coin, creator authority) come as a prepare/submit pair. Every transaction is signed in your wallet, never by us. Every response is `{ ok: true, data }` or `{ ok: false, error }`. Cross-origin requests are allowed from any site. Every answer from the API itself carries `RateLimit-Limit` and `RateLimit-Policy`; uncached ones (writes, prepare and submit, refusals) carry `RateLimit-Remaining` and `RateLimit-Reset` as well. The 503 while the API is paused and the 410 on old v1 write addresses carry neither."
+    "description": "Everything purps.lol can do, as JSON. Read the coin list, a coin's full page and the launchpad; launch coins on purps.lol, pump.fun and Pons; wire an existing pump.fun coin's fees into a strategy; steer a coin you own. No key, no signup. A launch is one call that returns unsigned transactions: the launch transaction can only land with your wallet's signature, and that is the proof. A launch that carries a strategy gets it attached by us once the launch lands on chain, on every launchpad. A strategy is said the short way, a preset name and the markets (`{ preset: \"balanced\", markets: [\"ETH\"] }`), or as the full config; both are accepted everywhere a strategy is. The few writes that need a message signature (Pons launches, wiring a strategy onto a coin, creator authority) come as a prepare/submit pair. Every transaction is signed in your wallet, never by us. Every response is `{ ok: true, data }` or `{ ok: false, error }`. Cross-origin requests are allowed from any site. Every answer from the API itself carries `RateLimit-Limit` and `RateLimit-Policy`; uncached ones (writes, prepare and submit, refusals) carry `RateLimit-Remaining` and `RateLimit-Reset` as well. The 503 while the API is paused and the 410 on old v1 write addresses carry neither."
   },
   "servers": [
     {
@@ -21,11 +21,11 @@
     },
     {
       "name": "Launch on pump.fun",
-      "description": "Launch straight on pump.fun with fees wired to a strategy."
+      "description": "Launch straight on pump.fun with fees wired to a strategy. One build, two signed transactions, and we register the strategy."
     },
     {
       "name": "Launch on Pons",
-      "description": "Launch through Pons, the launchpad on Robinhood Chain."
+      "description": "Launch through Pons, the launchpad on Robinhood Chain. One signed message, the steps to send, and we attach the strategy."
     },
     {
       "name": "Redirect a pump.fun coin",
@@ -560,7 +560,7 @@
         ],
         "operationId": "buildLaunch",
         "summary": "Build a purps.lol launch",
-        "description": "One call, no message to sign. Send the launch's terms, the coin's image and socials. We upload the metadata, build the launch transaction (and a SOL-to-pair swap in front of it when the pair is not SOL and there is a dev buy), simulate it, and record the launch as pending. You get back unsigned transactions and the throwaway mint key. The launch transaction can only land with the creator wallet's signature, and that is the proof: sign each transaction with the creator wallet, and the one at `createIndex` with the mint key as well, then send them in order through /transactions/send. The launch goes live on its own once the pool exists on chain; poll /launches/{mint}. A wallet the launchpad does not admit is refused with a 403 before anything is uploaded; a wallet that cannot afford the launch (about 0.03 SOL plus the dev buy) with a 400. `imageUrl` fetches are budgeted (20 an hour per address, 200 an hour site-wide); a 429 naming image fetches means send `image` as a data URL instead.",
+        "description": "One call, no message to sign. Send the launch's terms, the coin's image and socials, and for a strategy launch the `strategy`: the short form (`{ preset, markets }`) or the full config. We check the strategy, upload the metadata, build the launch transaction (and a SOL-to-pair swap in front of it when the pair is not SOL and there is a dev buy), simulate it, and record the launch as pending. You get back unsigned transactions and the throwaway mint key. The launch transaction can only land with the creator wallet's signature, and that is the proof: sign each transaction with the creator wallet, and the one at `createIndex` with the mint key as well, then send them in order through /transactions/send. The launch goes live on its own once the pool exists on chain, with its strategy registered; poll /launches/{mint}. A bad strategy is a 400 or 422 before anything is uploaded; a wallet the launchpad does not admit is refused with a 403 before anything is uploaded; a wallet that cannot afford the launch (about 0.03 SOL plus the dev buy) with a 400. `imageUrl` fetches are budgeted (20 an hour per address, 200 an hour site-wide); a 429 naming image fetches means send `image` as a data URL instead.",
         "requestBody": {
           "required": true,
           "content": {
@@ -667,7 +667,7 @@
         ],
         "operationId": "listMarkets",
         "summary": "Perp markets",
-        "description": "The perpetual futures markets a strategy can hold, with each one's leverage cap. A strategy's `perpLegs` must name markets from this list and stay within the cap.",
+        "description": "The perpetual futures markets a strategy can hold, with each one's leverage cap. A strategy's markets (`markets` or `legs` in the short form, `perpLegs` in the full config) must be names from this list and stay within the cap.",
         "x-rate-limit": "60 a minute",
         "x-cache": "30 seconds",
         "x-example": "/markets",
@@ -762,7 +762,7 @@
         ],
         "operationId": "getLaunchOptions",
         "summary": "Launch options",
-        "description": "Everything the create page knows before a launch is built, launchpad by launchpad (purps.lol, pump.fun, Pons): who may launch there right now, where its pairs are listed, which fee presets it takes, its fee terms, and what holders can be paid in. Plus the three strategy presets exactly as the site turns them into a config, and the airdrop-only config. Read this once, then pick a pair from /pairs and markets from /markets.",
+        "description": "Everything the create page knows before a launch is built, launchpad by launchpad (purps.lol, pump.fun, Pons): who may launch there right now, where its pairs are listed, which fee presets it takes, its fee terms, and what holders can be paid in. Plus the three strategy presets exactly as the site turns them into a config, and the airdrop-only config. You do not need to copy those: naming a preset in a strategy's short form (`{ preset: \"balanced\", markets: [\"ETH\"] }`) expands to the same config. Read this once, then pick a pair from /pairs and markets from /markets.",
         "x-rate-limit": "60 a minute",
         "x-cache": "10 seconds",
         "x-flow": "launch-solana",
@@ -877,7 +877,7 @@
         ],
         "operationId": "buildPumpLaunch",
         "summary": "Build a pump.fun launch",
-        "description": "One call, no message to sign. Builds the pump.fun create transaction with the coin's creator fees already pointed at the coin's PURPS wallet; the create transaction is the proof. Sign with the creator wallet and the mint key, send through /transactions/send, then call /pumpfun/fees to lock the fee routing and /redirects to attach the strategy. The creator wallet needs about 0.04 SOL plus the dev buy (0.045 with a custom pair) or the build is refused with a 400; a wallet the launchpad does not admit gets a 403. `imageUrl` fetches are budgeted (20 an hour per address, 200 an hour site-wide); a 429 naming image fetches means send `image` as a data URL instead.",
+        "description": "One call, no message to sign. Send the terms, the image and socials, and the `strategy` the coin will run (the short form or the full config). We check the strategy before anything is spent, build the pump.fun create transaction with the coin's creator fees already pointed at the coin's PURPS wallet, and store the strategy with the launch. You get back the `transactions` to sign (the create with the mint key too), and `feeRouting.transaction`: pump.fun's fee-sharing transaction, built now, signed by the creator wallet only. Sign the create and send it through /transactions/send; once it has confirmed, sign and send `feeRouting.transaction` the same way. That is the whole flow: we watch the chain and register the strategy ourselves within about 15 seconds of the fee routing landing, whether or not you stay online. Poll /coins/{mint} until it answers, or /redirects/{mint} for `registered`. The fee-routing transaction carries the blockhash it was built with, so send it within a minute or so of the build; if it has aged out, /pumpfun/fees builds a fresh one. `feeRouting` is null when it could not be built; then /pumpfun/fees builds it. A build sent without `strategy` still works the old way: after the create, /pumpfun/fees, then /redirects with the config. A bad strategy is a 400 or 422 before the upload; the creator wallet needs about 0.04 SOL plus the dev buy (0.045 with a custom pair) or the build is refused with a 400; a wallet the launchpad does not admit gets a 403. `imageUrl` fetches are budgeted (20 an hour per address, 200 an hour site-wide); a 429 naming image fetches means send `image` as a data URL instead.",
         "requestBody": {
           "required": true,
           "content": {
@@ -894,7 +894,7 @@
         "x-example": "/pumpfun/launches",
         "responses": {
           "200": {
-            "description": "The transactions to sign.",
+            "description": "The transactions to sign, and the fee-routing transaction.",
             "content": {
               "application/json": {
                 "schema": {
@@ -944,6 +944,16 @@
               }
             }
           },
+          "422": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Every failure carries the same envelope.",
             "content": {
@@ -974,7 +984,7 @@
         ],
         "operationId": "pumpFeeRouting",
         "summary": "Lock fee routing",
-        "description": "Step 3 for a pump.fun coin, and the first step for redirecting one you already own. Builds pump.fun's fee-sharing transaction that sends the coin's creator fees to its PURPS wallet permanently. Only the coin's on-chain creator can sign it. `done: true` means it is already in place.",
+        "description": "Builds pump.fun's fee-sharing transaction that sends the coin's creator fees to its PURPS wallet permanently. Only the coin's on-chain creator can sign it. A launch built through /pumpfun/launches already comes with this transaction as `feeRouting`; call this when that one's blockhash has aged out, when `feeRouting` was null, or as the first step for redirecting a pump.fun coin you launched elsewhere. `done: true` means it is already in place.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1061,7 +1071,7 @@
         ],
         "operationId": "getRedirect",
         "summary": "Check a pump.fun coin",
-        "description": "Whether a pump.fun coin's creator fees already point at its PURPS wallet, who its creator is, and whether it is registered here. `feeWallet` is the address its fees must go to. Besides the per-address limit, 40 different coins a minute across every caller; past that it is a 429 for a moment.",
+        "description": "Whether a pump.fun coin's creator fees already point at its PURPS wallet, who its creator is, and whether it is registered here. `feeWallet` is the address its fees must go to. After a launch built with `strategy`, `registered` turns true once we have attached it. Besides the per-address limit, 40 different coins a minute across every caller; past that it is a 429 for a moment.",
         "parameters": [
           {
             "name": "mint",
@@ -1129,7 +1139,7 @@
         ],
         "operationId": "submitRedirect",
         "summary": "Register the strategy",
-        "description": "Once a pump.fun coin's fees point at its PURPS wallet, this registers the strategy that will run on them. No signature: the on-chain fee routing is the proof of authority. `registered: false` with a `feeWallet` means the fees are not routed yet, or the chain has not shown us the routing yet: wait a few seconds and call again.",
+        "description": "Once a pump.fun coin's fees point at its PURPS wallet, this registers the strategy that will run on them: for a coin you launched elsewhere, or a build sent without `strategy`. A build that carried `strategy` does not need it; we register that one ourselves. No signature: the on-chain fee routing is the proof of authority. `config` is the short form or the full config. `registered: false` with a `feeWallet` means the fees are not routed yet, or the chain has not shown us the routing yet: wait a few seconds and call again.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1246,7 +1256,7 @@
         ],
         "operationId": "preparePonsLaunch",
         "summary": "Prepare a Pons launch",
-        "description": "Step 1: the message to sign with your EVM wallet (`personal_sign`, EIP-191). Pons is the one launchpad that still signs a message before the build, because launching there is invite-only and the signature is how the invite is checked before anything is spent. The message carries a `launches:` line that spells the launch out in words: name, ticker, pair, creator tax and first buy. Send `devBuy` and `creatorTaxBps` here too when you will send them to submit; they are part of those words.",
+        "description": "Step 1: the message to sign with your EVM wallet (`personal_sign`, EIP-191). Pons is the one launchpad that still signs a message before the build, because launching there is invite-only and the signature is how the invite is checked before anything is spent. Send the launch terms and the `config` the coin will run (the short form or the full config); a malformed config is a 400 here, so nothing is signed for nothing. The message carries a `launches:` line that spells the launch out in words (name, ticker, pair, creator tax and first buy), a `sets:` line with the strategy in words when a config is sent, and a `launch:` hash that covers the terms and the config. Send the same `devBuy`, `creatorTaxBps` and `config` to submit; they are part of what you sign. This is the only message a Pons launch signs: the strategy is attached by us once the launch lands.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1313,7 +1323,7 @@
         ],
         "operationId": "submitPonsLaunch",
         "summary": "Build the Pons launch",
-        "description": "Step 2. Returns the EVM transactions to send from the creator wallet, in order: an optional swap and approval when there is a dev buy in a token pair, then the launch itself. You send these yourself (there is no relay on Robinhood Chain). Then call /pons/launches/{ref} with the launch transaction hash and register the strategy.",
+        "description": "Step 2. The signature is checked, then the `config` is checked in full (markets, leverage, payout assets) before the image is uploaded; a refusal here says why. Returns the EVM transactions to send from the creator wallet, in order: an optional swap and approval when there is a dev buy in a token pair, then the launch itself. You send these yourself (there is no relay on Robinhood Chain). The config is stored as pending: once the launch from your wallet whose fees point at this coin's wallet shows on chain, we attach the strategy ourselves, within about 15 seconds of it confirming. Poll /pons/launches/{ref} with the launch hash until `registered` carries the coin's address, then read /coins/{mint}. A build sent without `config` is registered by hand afterwards through /pons/register/prepare and submit.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1430,7 +1440,7 @@
         ],
         "operationId": "getPonsLaunch",
         "summary": "Find a Pons launch",
-        "description": "Resolve a launch by its transaction hash or the token address it created: the token, the creator, the `walletKey` the register step needs, and whether it is registered.",
+        "description": "Resolve a launch by its transaction hash or the token address it created: the token, the creator, its `walletKey`, and `registered`, the coin's address once a strategy is attached (by us after a build with `config`, or by hand through the register pair), else null. Poll it after sending the steps.",
         "parameters": [
           {
             "name": "ref",
@@ -1616,7 +1626,7 @@
         ],
         "operationId": "preparePonsRegister",
         "summary": "Prepare the registration",
-        "description": "The message to sign to attach a strategy to a Pons launch you sent. It carries the `walletKey` the coin will run on, the strategy in words on a `sets:` line and its hash, so send the same `walletKey` and `config` to submit, byte for byte.",
+        "description": "For a Pons launch built without `config`, or made outside the API: the message to sign to attach a strategy to it. Takes `creatorWallet`, `txHash`, the launch's `walletKey` and the `config` (short form or full); a missing or malformed config is a 400. The message carries the `walletKey` the coin will run on, the strategy in words on a `sets:` line and its hash (over the full config, after a short form has been expanded), so send the same `walletKey` and `config` to submit. A launch built with `config` does not need this: we attach that strategy ourselves.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1800,7 +1810,7 @@
         ],
         "operationId": "prepareStrategy",
         "summary": "Prepare a strategy",
-        "description": "For a purps.lol coin that was launched without a strategy: the message the creator wallet signs to attach one now. Attaching routes the whole creator fee into it. Not possible for launches from before September 2026, whose fee vault is owned by the creator's wallet on chain. The `config` is validated here and a malformed one is a 400 that says which field is wrong. The message carries a `sets:` line with the strategy in words (fee split, what profits do, take-profit and dip-buy rules, markets) next to its hash, so whoever signs reads the numbers.",
+        "description": "For a purps.lol coin that was launched without a strategy: the message the creator wallet signs to attach one now. Attaching routes the whole creator fee into it. Not possible for launches from before September 2026, whose fee vault is owned by the creator's wallet on chain. The `config` is the short form (`{ preset, markets }`) or the full config; it is validated here and a malformed one is a 400 that says which field is wrong. The message carries a `sets:` line with the strategy in words (fee split, what profits do, take-profit and dip-buy rules, markets) next to its hash, so whoever signs reads the numbers. A short form is expanded first, so the words and the hash describe the full strategy it becomes.",
         "parameters": [
           {
             "name": "mint",
@@ -1878,7 +1888,7 @@
         ],
         "operationId": "submitStrategy",
         "summary": "Attach the strategy",
-        "description": "Register the strategy against the launch. The config must be byte-for-byte what prepare hashed. A coin's strategy is set once.",
+        "description": "Register the strategy against the launch. Send the same `config` prepare received, in the same form; a short form expands the same way both times, so the hash matches. A coin's strategy is set once.",
         "parameters": [
           {
             "name": "mint",
@@ -3675,17 +3685,74 @@
           },
           "hash": {
             "type": "string",
-            "description": "Pons launch prepare only: the terms' hash, as embedded in the message. For your records."
+            "description": "Pons launch prepare only: the hash of the launch terms and, when one is sent, the config, as embedded in the message. For your records."
           },
           "configHash": {
             "type": "string",
-            "description": "Strategy and Pons register prepare only: the hash of `config` exactly as you sent it, as embedded in the message."
+            "description": "Strategy and Pons register prepare only: the hash of `config` as embedded in the message. It is over the full config: a short form is expanded first, and expands the same way at submit."
+          }
+        }
+      },
+      "StrategyShorthand": {
+        "type": "object",
+        "description": "The short way to say a strategy: a preset and the markets. It expands to exactly the full config the site's create page builds from the same choices, so a coin launched through the API and one launched on the page are the same coin. Accepted everywhere a Strategy is: `strategy` on a purps.lol or pump.fun build, `config` on a redirect, a Pons launch or registration, a later attach, and a creator-authority strategy change. Where the strategy is signed, prepare and submit both expand it, and the words and hash in the message describe the expanded strategy. Anything with `splitBuybackBps` is taken as the full form instead.",
+        "properties": {
+          "preset": {
+            "type": "string",
+            "description": "`steady`, `balanced` or `degen` set the fee split, the take-profit and dip-buy rules and each leg's reserve mode (none for `degen`, defensive otherwise), exactly as /launch-options lists them. `airdrop` is the coin with no perps: every fee goes to the buyback and is paid to holders.",
+            "enum": [
+              "steady",
+              "balanced",
+              "degen",
+              "airdrop"
+            ],
+            "required": true
+          },
+          "markets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The markets to hold, by name from /markets, up to 10, each once. Every leg is long at 2x and the weight is split evenly. Send this or `legs`; the `airdrop` preset takes neither."
+          },
+          "legs": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Instead of `markets`, when a leg is not long at 2x: `[{ market, direction?, leverage? }]`. `direction` is `long` (default) or `short`; `leverage` a whole number from 1 to 100 (default 2), within the market's cap. Weights are split evenly."
+          },
+          "rewardMode": {
+            "type": "string",
+            "description": "What profits do: `burn` (the default), `holders` pays the coin itself, `backed` pays `payoutMint`. Defaults to `backed` when `payoutMint` is given. The `airdrop` preset is `holders`, or `backed` with a `payoutMint`; it cannot burn.",
+            "enum": [
+              "burn",
+              "holders",
+              "backed"
+            ]
+          },
+          "payoutMint": {
+            "type": "string",
+            "description": "The asset holders are paid in, for `backed`; the same rules as the full form's `payoutMint`. Naming it makes the mode `backed` unless `rewardMode` says otherwise.",
+            "nullable": true
+          },
+          "payoutMintsExtra": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Up to four more payout assets for a paying coin, as in the full form.",
+            "nullable": true
+          },
+          "ownerControls": {
+            "type": "boolean",
+            "description": "Creator authority from launch, as in the full form."
           }
         }
       },
       "Strategy": {
         "type": "object",
-        "description": "How a coin uses its fees. Basis points sum to 10000 across the three splits.",
+        "description": "How a coin uses its fees, the long way: every field the create page fills in. Send this when the short form (StrategyShorthand) does not say what you want, for instance uneven weights, your own fee split, or a take-profit on one leg. Basis points sum to 10000 across the three splits.",
         "properties": {
           "splitBuybackBps": {
             "type": "integer",
@@ -3772,14 +3839,14 @@
           },
           "presets": {
             "type": "array",
-            "description": "The site's strategy presets, the same on every launchpad, each with the exact `config` fields to send.",
+            "description": "The site's strategy presets, the same on every launchpad, each with the exact `config` fields a full Strategy carries. Naming the preset's `key` in the short form sends the same thing.",
             "items": {
               "$ref": "#/components/schemas/StrategyPreset"
             }
           },
           "airdropOnly": {
             "type": "object",
-            "description": "The config for a coin that only pays holders and holds no perps: the whole fee to the buyback, no legs. Set `payoutMint` for a backed asset, or leave `rewardMode` as holders for the coin itself."
+            "description": "The full config for a coin that only pays holders and holds no perps: the whole fee to the buyback, no legs. Set `payoutMint` for a backed asset, or leave `rewardMode` as holders for the coin itself. The short form `{ preset: \"airdrop\" }` is the same thing."
           }
         }
       },
@@ -3855,7 +3922,7 @@
           },
           "config": {
             "type": "object",
-            "description": "Merge into your Strategy: the three splits, the `strategy` tuning object, and `legReserveMode`, the `reserveMode` to set on every leg (`none` when the preset keeps no reserve). Add your own `perpLegs`, `rewardMode` and payout mints."
+            "description": "What the preset becomes in a full Strategy: the three splits, the `strategy` tuning object, and `legReserveMode`, the `reserveMode` to set on every leg (`none` when the preset keeps no reserve). Only needed when you build the full form yourself; the short form `{ preset: key, markets }` fills it in for you."
           }
         }
       },
@@ -3960,9 +4027,16 @@
             "description": "Your fee tier, basis points of curve volume, on top of the platform's 1%. Default 100 (1%); 50 (0.5%) to 980 (9.8%)."
           },
           "strategy": {
-            "$ref": "#/components/schemas/Strategy",
             "type": "object",
-            "description": "Required when `feePreset` is `strategy` or `feeSplit.strategyBps` is above zero. Checked before anything is uploaded; registered by us the moment the launch goes live."
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StrategyShorthand"
+              },
+              {
+                "$ref": "#/components/schemas/Strategy"
+              }
+            ],
+            "description": "Required when `feePreset` is `strategy` or `feeSplit.strategyBps` is above zero. The short form (`{ preset, markets }`) or the full config. Checked before anything is uploaded; registered by us the moment the launch goes live."
           },
           "creatorWallet": {
             "type": "string",
@@ -4012,6 +4086,18 @@
           "devBuySol": {
             "type": "number",
             "description": "Your own first buy, in SOL. Default 0."
+          },
+          "strategy": {
+            "type": "object",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StrategyShorthand"
+              },
+              {
+                "$ref": "#/components/schemas/Strategy"
+              }
+            ],
+            "description": "The strategy the coin's fees will run: the short form (`{ preset, markets }`) or the full config. Checked before anything is spent, stored with the launch, and registered by us once the fee routing lands on chain. Leave it out and the build still works the old way: /pumpfun/fees, then /redirects with the config."
           },
           "creatorWallet": {
             "type": "string",
@@ -4097,6 +4183,17 @@
             "description": "Where the logo was stored, when this build uploaded one.",
             "nullable": true
           },
+          "feeRouting": {
+            "type": "object",
+            "description": "pump.fun builds only: pump.fun's fee-sharing transaction, `{ transaction }` as base64, built with the launch. Sign it with the creator wallet only (no mint key) and send it through /transactions/send once the create has confirmed. It carries the blockhash it was built with, so send it within a minute or so; if it has aged out, /pumpfun/fees builds a fresh one. Null when it could not be built; then /pumpfun/fees builds it. Absent on a purps.lol build.",
+            "nullable": true,
+            "properties": {
+              "transaction": {
+                "type": "string",
+                "description": "Base64 transaction to sign with the creator wallet and send after the create."
+              }
+            }
+          },
           "url": {
             "type": "string",
             "description": "The coin's future page."
@@ -4174,6 +4271,11 @@
             "type": "boolean",
             "description": "Whether they already are."
           },
+          "strategy": {
+            "type": "object",
+            "description": "A strategy sent with the build: `{ status: waiting | attached | refused, reason }`. `waiting` until the chain shows what it needs, `attached` once we registered it, `refused` with the reason when it could not be. Null when the build carried none.",
+            "nullable": true
+          },
           "feeShareBps": {
             "type": "integer",
             "description": "How much of the creator fee reaches the strategy, in basis points."
@@ -4197,9 +4299,16 @@
             "required": true
           },
           "config": {
-            "$ref": "#/components/schemas/Strategy",
             "type": "object",
-            "description": "The strategy to run.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StrategyShorthand"
+              },
+              {
+                "$ref": "#/components/schemas/Strategy"
+              }
+            ],
+            "description": "The strategy to run: the short form (`{ preset, markets }`) or the full config.",
             "required": true
           },
           "name": {
@@ -4277,12 +4386,24 @@
           "creatorTaxBps": {
             "type": "integer",
             "description": "A creator tax on every trade, basis points, up to 2000. Default 0. Part of the signed words when sent, so send the same value to submit."
+          },
+          "config": {
+            "type": "object",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StrategyShorthand"
+              },
+              {
+                "$ref": "#/components/schemas/Strategy"
+              }
+            ],
+            "description": "The strategy the coin will run: the short form (`{ preset, markets }`) or the full config. A Robinhood Chain payout asset is a `0x` address. In the signed words on a `sets:` line and covered by the `launch:` hash, so send the same `config` to submit. We attach it ourselves once the launch lands. Leave it out and the launch is registered by hand afterwards through /pons/register/prepare and submit."
           }
         }
       },
       "PonsSubmit": {
         "type": "object",
-        "description": "Everything in PonsTerms, plus:",
+        "description": "Everything in PonsTerms (the same `config` included, when one was sent), plus:",
         "properties": {
           "image": {
             "type": "string",
@@ -4328,7 +4449,7 @@
           },
           "walletKey": {
             "type": "string",
-            "description": "Keep this: the register step needs it."
+            "description": "The key the coin's wallets derive from. A build with `config` needs nothing more from you; keep it for the register step when the build had no `config`."
           },
           "feeRecipient": {
             "type": "string",
@@ -4381,7 +4502,7 @@
           },
           "walletKey": {
             "type": "string",
-            "description": "What the register step needs."
+            "description": "The key the coin's wallets derive from; what the register step needs for a launch built without `config`."
           },
           "name": {
             "type": "string",
@@ -4402,7 +4523,12 @@
           },
           "registered": {
             "type": "string",
-            "description": "The registered coin's address, or null.",
+            "description": "The registered coin's address once a strategy is attached, else null. After a build with `config`, poll until it is set, then read /coins/{mint}.",
+            "nullable": true
+          },
+          "strategy": {
+            "type": "object",
+            "description": "A strategy sent with the build: `{ status: waiting | attached | refused, reason }`. `waiting` until the chain shows what it needs, `attached` once we registered it, `refused` with the reason when it could not be. Null when the build carried none.",
             "nullable": true
           }
         }
@@ -4443,6 +4569,7 @@
       },
       "PonsRegisterTerms": {
         "type": "object",
+        "description": "For a launch built without `config`, or made outside the API.",
         "properties": {
           "creatorWallet": {
             "type": "string",
@@ -4456,13 +4583,20 @@
           },
           "walletKey": {
             "type": "string",
-            "description": "From submit or from /pons/launches/{ref}. In the signed words.",
+            "description": "From submit or from /pons/launches/{ref}: `pons:0x…`. In the signed words.",
             "required": true
           },
           "config": {
-            "$ref": "#/components/schemas/Strategy",
             "type": "object",
-            "description": "The strategy to run. In the signed words and hashed; send it to submit exactly as sent here.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StrategyShorthand"
+              },
+              {
+                "$ref": "#/components/schemas/Strategy"
+              }
+            ],
+            "description": "The strategy to run: the short form (`{ preset, markets }`) or the full config. In the signed words and hashed; send the same `config` to submit. Missing or malformed is a 400.",
             "required": true
           }
         }
@@ -4546,9 +4680,16 @@
         "type": "object",
         "properties": {
           "config": {
-            "$ref": "#/components/schemas/Strategy",
             "type": "object",
-            "description": "The strategy to attach.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StrategyShorthand"
+              },
+              {
+                "$ref": "#/components/schemas/Strategy"
+              }
+            ],
+            "description": "The strategy to attach: the short form (`{ preset, markets }`) or the full config.",
             "required": true
           }
         }
@@ -4557,9 +4698,16 @@
         "type": "object",
         "properties": {
           "config": {
-            "$ref": "#/components/schemas/Strategy",
             "type": "object",
-            "description": "Identical to what prepare received.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StrategyShorthand"
+              },
+              {
+                "$ref": "#/components/schemas/Strategy"
+              }
+            ],
+            "description": "The same `config` prepare received, in the same form.",
             "required": true
           },
           "ts": {
@@ -4845,9 +4993,16 @@
             "description": "`action` only: what to do."
           },
           "config": {
-            "$ref": "#/components/schemas/Strategy",
             "type": "object",
-            "description": "`strategy` only: the whole new config. Sent byte-for-byte the same to submit; its hash is in the message."
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StrategyShorthand"
+              },
+              {
+                "$ref": "#/components/schemas/Strategy"
+              }
+            ],
+            "description": "`strategy` only: the whole new strategy, as the short form (`{ preset, markets }`) or the full config. Send the same `config` to submit; its hash (over the full form, after a short form has been expanded) is in the message."
           },
           "note": {
             "type": "string",

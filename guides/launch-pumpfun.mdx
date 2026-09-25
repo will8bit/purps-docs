@@ -5,21 +5,48 @@ description: "A coin on pump.fun's own curve, with its creator fees wired into a
 icon: "/icons/pumpfun.svg"
 ---
 
-The coin is created on pump.fun with its on-chain creator set to the coin's PURPS wallet, so creator fees flow to the strategy from the start. One build call, two or three signed transactions, then a registration. No message to sign: the create transaction is the proof. The complete example on the purps.lol page applies here with the paths changed.
+The coin is created on pump.fun with its on-chain creator set to the coin's PURPS wallet, so creator fees flow to the strategy from the start. One build call with the strategy in it, two signed transactions, and we register the strategy ourselves. No message to sign: the create transaction is the proof. The complete example on the purps.lol page applies here with the path changed and the fee-routing step added.
 
 <Steps>
   <Step title="Read the options">
-    `GET /launch-options` and look under `pumpfun`: who may launch, who may use a custom pair, and the payout assets. Pairs are under `pumpfun` in `GET /pairs`.
+    `GET /launch-options` and look under `pumpfun`: who may launch, who may use a custom pair, and the payout assets. Pairs are under `pumpfun` in `GET /pairs`; perp markets in `GET /markets`.
   </Step>
   <Step title="Build">
-    `POST /pumpfun/launches` with `name`, `symbol`, `creatorWallet`, the logo (`image` as a data URL, or `imageUrl`), and optionally `quoteMint` (from `pumpfun` in `/pairs`; SOL when omitted), `devBuySol`, `description`, `twitter` and `telegram`. Sign the returned `transactions` (the one at `createIndex` with the mint key too) and send them through `/transactions/send`, one at a time, waiting for each to confirm.
+    `POST /pumpfun/launches` with `name`, `symbol`, `creatorWallet`, the logo (`image` as a data URL, or `imageUrl`), the `strategy`, and optionally `quoteMint` (from `pumpfun` in `/pairs`; SOL when omitted), `devBuySol`, `description`, `twitter` and `telegram`.
+
+    The strategy is a preset and the markets:
+
+    ```json
+    { "preset": "balanced", "markets": ["ETH"] }
+    ```
+
+    That is the same strategy the create page builds from the same choices; the [purps.lol guide](/guides/launch-solana#a-strategy-launch) has every option, and the full config is accepted too. It is checked before anything is spent: a bad strategy is refused before the upload, with the reason.
+
+    You get back `transactions`, `createIndex`, `mintSecret` and `feeRouting.transaction`.
   </Step>
-  <Step title="Lock the fee routing">
-    Once the create has confirmed: `POST /pumpfun/fees` with `mint` and `creatorWallet`. Sign and send the returned `transaction` the same way. This is pump.fun's fee-sharing config: once set, the coin's creator fees go to its PURPS wallet permanently. `done: true` means the coin already has a fee-sharing config; `GET /redirects/{mint}` confirms it points at the PURPS wallet.
+  <Step title="Sign and send the create">
+    Sign the `transactions` (the one at `createIndex` with the mint key too) and send them through `/transactions/send`, one at a time, waiting for each to confirm.
   </Step>
-  <Step title="Register the strategy">
-    `POST /redirects` with `mint` and your strategy `config`, built as on the purps.lol page and in the same shape as a Solana strategy launch, `payoutMint` and up to four `payoutMintsExtra` included. No signature needed: the fee routing you just locked on chain is the proof. If it answers `registered: false`, the chain has not shown us the routing yet: wait a few seconds and call it again. `registered: true` and the coin is live on purps.lol with its strategy running.
+  <Step title="Sign and send the fee routing">
+    Once the create has confirmed: sign `feeRouting.transaction` with the creator wallet only (no mint key) and send it the same way. This is pump.fun's fee-sharing config: once set, the coin's creator fees go to its PURPS wallet permanently.
+
+    It was built with the launch and carries that blockhash, so send it within a minute or so. If it has aged out (`/transactions/send` answers `400` with `detail.code` `expired`), `POST /pumpfun/fees` with `mint` and `creatorWallet` builds a fresh one. The same call covers a build whose `feeRouting` came back `null`.
+  </Step>
+  <Step title="Done">
+    We watch the chain and register the strategy ourselves within about 15 seconds of the fee routing landing; you do not need to stay online. Poll `GET /coins/{mint}` until it answers, or `GET /redirects/{mint}` until `registered` is true. The coin is then live on purps.lol with its strategy running.
   </Step>
 </Steps>
 
+## Without a strategy in the build
+
+A build sent without `strategy` still works the old way: send the create, send the fee routing (`feeRouting.transaction`, or one from `/pumpfun/fees`), then `POST /redirects` with `mint` and the strategy as `config`, as on the [redirect page](/guides/redirect). Nothing is registered until you do.
+
+## What it costs
+
 The creator wallet needs about 0.04 SOL plus the dev buy (0.045 with a custom pair); the build checks that before uploading anything (when it can read the balance) and answers `400` when it is short. Fetching the logo by `imageUrl` is budgeted at 20 an hour per address; when the build answers `429` about image fetches, send the bytes as `image` instead.
+
+A strategy that pays holders needs `holderPayoutsEnabled` in `/launch-options` to be true; when it is not, the build is refused with a `403` before anything is spent.
+
+<Note>
+If a strategy sent with the build could not be attached, the lookup says so: `strategy.status` is `refused` with the reason on `GET /redirects/{mint}`, `waiting` until the chain shows what it needs, `attached` once done.
+</Note>

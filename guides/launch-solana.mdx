@@ -22,10 +22,10 @@ There is no message to sign. The launch transaction can only land with your wall
 
 <Steps>
   <Step title="Read the options">
-    `GET /launch-options` and look under `purps`: who may launch, the creator fee range, and the payout assets. The three strategy presets and the airdrop-only config sit at the top level. `GET /pairs` lists the pairs (SOL is `So11111111111111111111111111111111111111112`); `GET /markets` the perp markets and their leverage caps.
+    `GET /launch-options` and look under `purps`: who may launch, the creator fee range, and the payout assets. The three strategy presets sit at the top level, with what each one becomes in full. `GET /pairs` lists the pairs (SOL is `So11111111111111111111111111111111111111112`); `GET /markets` the perp markets and their leverage caps.
   </Step>
   <Step title="Build">
-    `POST /launches` with `name`, `symbol`, `quoteMint`, `feePreset`, `creatorWallet`, the logo (`image` as a data URL, or `imageUrl`), and optionally `feeSplit`, `devBuySol`, `creatorFeeBps`, `strategy`, `description`, `twitter` and `telegram`. We upload the metadata, build the transactions and record the launch as pending. A wallet the launchpad does not admit is refused before anything is uploaded.
+    `POST /launches` with `name`, `symbol`, `quoteMint`, `feePreset`, `creatorWallet`, the logo (`image` as a data URL, or `imageUrl`), and optionally `feeSplit`, `devBuySol`, `creatorFeeBps`, `strategy` (a preset and the markets, see below), `description`, `twitter` and `telegram`. We check the strategy, upload the metadata, build the transactions and record the launch as pending. A bad strategy, or a wallet the launchpad does not admit, is refused before anything is uploaded.
   </Step>
   <Step title="Sign and send">
     Sign each of `transactions` with the creator wallet, and the one at `createIndex` with the mint keypair from `mintSecret` as well. `POST /transactions/send` them one at a time, in order, waiting for each to confirm before the next: when the pair is not SOL and there is a dev buy, the first transaction is a swap the launch spends. If `confirmed` is false, poll `GET /transactions/{signature}` until it is.
@@ -45,9 +45,36 @@ Send `image` as a data URL (`data:image/png;base64,…`; PNG, JPEG, WebP or GIF,
 
 ## A strategy launch
 
-With `feePreset: "strategy"`, send a `strategy` object with the terms. It is checked before anything is uploaded, and registered by us the moment the launch goes live; you never come back for a second signature.
+With `feePreset: "strategy"`, send a `strategy` with the terms. It is checked before anything is uploaded, and registered by us the moment the launch goes live; you never come back for a second signature.
 
-The site builds that object from a preset plus your choices. Do the same:
+A strategy is a preset and the markets:
+
+```json
+{ "preset": "balanced", "markets": ["ETH"] }
+```
+
+That expands to exactly the config the create page builds from the same choices, so a coin launched through the API and one launched on the page are the same coin. The same short form is accepted everywhere the API takes a strategy: here, on pump.fun and Pons, on a redirect, a later attach, and a creator-authority strategy change.
+
+- `preset` is `steady`, `balanced` or `degen`: the fee split, the take-profit and dip-buy rules, and each leg's reserve mode, as `/launch-options` lists them. `balanced`, for instance, is 5% of each fee to buybacks, 75% to trading and 20% to the reserve.
+- `markets` is a list of names from `/markets`, up to 10. Every leg is long at 2x, and the weight is split evenly.
+- `legs` instead of `markets` when a leg is not long at 2x: `[{ "market": "ETH", "direction": "short", "leverage": 5 }]`. `direction` is `long` (default) or `short`; `leverage` a whole number from 1 to 100, within the market's cap.
+- `rewardMode` decides what profits do: `burn` (the default) buys and burns the coin, `holders` airdrops the coin, `backed` airdrops `payoutMint`. Naming a `payoutMint` makes it `backed` on its own: a tokenised stock or major from the launchpad's `payoutAssets`, or any Solana mint with a real market. `payoutMintsExtra` adds up to four more assets, split evenly. Paying coins need `holderPayoutsEnabled` to be true.
+- `ownerControls: true` asks for [creator authority](/guides/creator-authority) from launch: you can steer the coin from its page or through the API, every move signed and shown to holders. It is honoured while the platform has creator authority open.
+- No perps at all: `{ "preset": "airdrop" }`, with no markets. Every fee goes to the buyback and is airdropped to holders as the coin, or as `payoutMint` when you name one.
+
+A backed coin with creator authority, then:
+
+```json
+{ "preset": "balanced", "markets": ["ETH"], "payoutMint": "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB", "ownerControls": true }
+```
+
+<Note>
+`feePreset: "airdrop"` and the `airdrop` strategy preset are different things. The `airdrop` fee preset pays holders straight from the curve's fees, in the pair token, with no strategy at all. The `airdrop` strategy preset is a `strategy` launch with no perps: every fee buys the coin, or the backed asset you name, and airdrops that.
+</Note>
+
+### The long way
+
+The short form covers what the create page offers. For anything else (uneven weights, your own fee split, a take-profit or stop-loss on one leg, a different reserve mode) send the full config instead. It is what the short form expands to, and it is accepted everywhere the short form is:
 
 ```json
 {
@@ -66,13 +93,10 @@ The site builds that object from a preset plus your choices. Do the same:
 
 - The three splits and `strategy` come straight from a preset's `config` in `/launch-options`. Custom values are fine too.
 - `perpLegs` are your pick from `/markets`; weights must sum to 10000 across legs. Use the preset's `legReserveMode` as each leg's `reserveMode`. A leg may also carry `takeProfitPct` and `stopLossPct`.
-- `rewardMode` decides what profits do: `burn` buys and burns the coin, `holders` airdrops the coin, `backed` airdrops `payoutMint`, a tokenised stock or major from the launchpad's `payoutAssets` or any Solana mint with a real market. `payoutMintsExtra` adds up to four more assets, split evenly (the older `payoutMint2` still works for one). Paying coins need `holderPayoutsEnabled` to be true.
-- `ownerControls: true` asks for [creator authority](/guides/creator-authority) from launch: you can steer the coin from its page or through the API, every move signed and shown to holders. It is honoured while the platform has creator authority open.
-- No perps at all: send the `airdropOnly` config from `/launch-options` and pick the payout the same way.
+- `rewardMode`, `payoutMint`, `payoutMintsExtra` and `ownerControls` mean the same as above (the older `payoutMint2` still works for one extra asset).
+- No perps at all: the `airdropOnly` config from `/launch-options`.
 
-<Note>
-`feePreset: "airdrop"` and the `airdropOnly` strategy are different things. The `airdrop` preset pays holders straight from the curve's fees, in the pair token, with no strategy at all. The `airdropOnly` config is a `strategy` launch with no perps: every fee buys the coin, or the backed asset you name, and airdrops that.
-</Note>
+Anything carrying `splitBuybackBps` is taken as the full form.
 
 ## A complete example
 
@@ -134,4 +158,4 @@ for (;;) {
 console.log("live at", build.url);
 ```
 
-For a strategy launch, set `feePreset: "strategy"` and add the `strategy` object from the section above to the build body.
+For a strategy launch, set `feePreset: "strategy"` and add `strategy: { preset: "balanced", markets: ["ETH"] }` to the build body.
