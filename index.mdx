@@ -1,15 +1,15 @@
 ---
 title: "PURPS API"
 sidebarTitle: "Overview"
-description: "Everything purps.lol can do, as JSON. No key, no signup, nothing custodial."
+description: "Everything purps.lol does, as JSON. No key, no signup, and we never hold your keys."
 icon: "book-open"
 ---
 
-PURPS is a launchpad where a coin's trading fees work for its holders. Fees are claimed automatically and either buy the coin back and burn it, are airdropped to holders, or fund perpetual futures positions whose profits go to holders.
+PURPS is a launchpad where a coin's trading fees go back to its holders. We claim the fees automatically and either buy the coin back and burn it, airdrop them to holders, or use them as margin for perpetual futures (perps) positions whose profits go to holders.
 
-Everything the site does can be done through this API: read any coin's books, launch a coin on purps.lol, pump.fun or Pons (on Robinhood Chain), wire an existing pump.fun coin's fees into a strategy, and steer a coin you own.
+Everything the site does, you can do from this API: read any coin's books, launch a coin on purps.lol, pump.fun or Pons (Robinhood Chain's launchpad), point an existing pump.fun coin's fees at a strategy, and steer a coin you own.
 
-This is v2. The old `/api/v1` reads still answer, served by v2 with the same shapes; the old v1 write addresses answer `410` with a pointer here.
+This is v2. Old `/api/v1` reads still work and return v2 data. Old v1 write addresses return `410` and point here.
 
 ## First call
 
@@ -37,20 +37,22 @@ for coin in r.json()["data"]["items"]:
 
 Every response is `{ "ok": true, "data": … }` or `{ "ok": false, "error": "…" }`. Base URL: `https://purps.lol/api/v2`.
 
+`GET /coins` is the ranked list. `GET /launches` is the purps.lol launches, filterable by `status`, `curve`, `quoteMint` or `creator` (a wallet).
+
 ## How it works
 
 <CardGroup cols={2}>
   <Card title="No keys" icon="key-round" href="/guides/signing">
-    A launch is one call; the transaction you sign is the proof. The few writes that need a message signature come as prepare, sign, submit.
+    A launch is one call and the transaction you sign is the proof; the few writes that need a message signature go prepare, sign, submit.
   </Card>
   <Card title="Non-custodial" icon="shield-check" href="/guides/signing">
-    We never hold your key. Transactions are built for your wallet to sign; a launch's throwaway mint key is handed to you as `mintSecret`, and the only signature we ever add is the launchpad's own memo co-sign on a purps.lol create.
+    You sign every transaction in your own wallet, the launch's throwaway mint key comes back to you as `mintSecret`, and the only signature we add is the launchpad's memo co-sign on a purps.lol create.
   </Card>
-  <Card title="Launches finish themselves" icon="rocket" href="/guides/launch-solana">
-    Once your launch lands, we see it on chain, mark the coin live and attach the strategy you sent with the build, on every launchpad. A strategy is a preset and the markets: `{ preset: "balanced", markets: ["ETH"] }`.
+  <Card title="No second step" icon="rocket" href="/guides/launch-solana">
+    Once your launch lands we see it on chain, mark the coin live and attach the strategy you sent with the build (a preset and the markets: `{ preset: "balanced", markets: ["ETH"] }`), on every launchpad.
   </Card>
   <Card title="Frozen shapes" icon="lock">
-    Fields may be added to v2. None will be renamed or removed.
+    We may add fields to v2; we won't rename or remove any.
   </Card>
 </CardGroup>
 
@@ -61,10 +63,10 @@ Every response is `{ "ok": true, "data": … }` or `{ "ok": false, "error": "…
     A coin on a Meteora curve, paired with SOL or any listed token, with fees to holders, to you, or into a strategy.
   </Card>
   <Card title="Launch on pump.fun" icon="/icons/pumpfun.svg" href="/guides/launch-pumpfun">
-    pump.fun's own curve, with creator fees wired into a strategy from the first trade. One build, two signed transactions, and we register the strategy.
+    pump.fun's own curve with creator fees wired into a strategy from the first trade: one build, two signed transactions, and we register the strategy.
   </Card>
   <Card title="Launch on Pons" icon="/icons/pons.svg" href="/guides/launch-pons">
-    An EVM coin on Pons, Robinhood Chain's launchpad, paired with ETH or a listed token. One signed message, the steps to send, and we attach the strategy.
+    An EVM coin on Pons (Robinhood Chain's launchpad), paired with ETH or a listed token: one signed message, the steps to send, and we attach the strategy.
   </Card>
   <Card title="Redirect a pump.fun coin" icon="/icons/pumpfun.svg" href="/guides/redirect">
     Point an existing pump.fun coin's fees at a strategy.
@@ -73,10 +75,10 @@ Every response is `{ "ok": true, "data": … }` or `{ "ok": false, "error": "…
     Attach a strategy to a coin launched without one.
   </Card>
   <Card title="Creator authority" icon="shield-check" href="/guides/creator-authority">
-    Steer a coin you own: act on a position, change its strategy, hand it on. Every move signed and shown to holders.
+    Steer a coin you own: act on a position, change its strategy or hand it on, every move signed and shown to holders.
   </Card>
 </CardGroup>
 
 ## For agents
 
-An agent that lands on purps.lol reads [llms.txt](https://purps.lol/llms.txt) first: what PURPS is, every endpoint, and the flows. The full machine-readable spec is at [openapi.json](https://purps.lol/api/v2/openapi.json).
+If you're an agent, start with [llms.txt](https://purps.lol/llms.txt): what PURPS is, every endpoint, and the flows. The full machine-readable spec is at [openapi.json](https://purps.lol/api/v2/openapi.json).

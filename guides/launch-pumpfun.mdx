@@ -5,7 +5,7 @@ description: "A coin on pump.fun's own curve, with its creator fees wired into a
 icon: "/icons/pumpfun.svg"
 ---
 
-The coin is created on pump.fun with its on-chain creator set to the coin's PURPS wallet, so creator fees flow to the strategy from the start. One build call with the strategy in it, two signed transactions, and we register the strategy ourselves. No message to sign: the create transaction is the proof. The complete example on the purps.lol page applies here with the path changed and the fee-routing step added.
+The coin is created on pump.fun with its on-chain creator set to the coin's PURPS wallet, so creator fees go to the strategy from the start. One build call with the strategy in it, two signed transactions, and we register the strategy. No message to sign: the create transaction is the proof. The complete example on the purps.lol page works here with the path changed and the fee-routing step added.
 
 <Steps>
   <Step title="Read the options">
@@ -20,7 +20,7 @@ The coin is created on pump.fun with its on-chain creator set to the coin's PURP
     { "preset": "balanced", "markets": ["ETH"] }
     ```
 
-    That is the same strategy the create page builds from the same choices; the [purps.lol guide](/guides/launch-solana#a-strategy-launch) has every option, and the full config is accepted too. It is checked before anything is spent: a bad strategy is refused before the upload, with the reason.
+    That's the same strategy the create page builds from the same choices. The [purps.lol guide](/guides/launch-solana#a-strategy-launch) has every option, and the full config works too. We check it before anything is spent: a bad strategy is refused before the upload, with the reason.
 
     You get back `transactions`, `createIndex`, `mintSecret` and `feeRouting.transaction`.
   </Step>
@@ -28,12 +28,12 @@ The coin is created on pump.fun with its on-chain creator set to the coin's PURP
     Sign the `transactions` (the one at `createIndex` with the mint key too) and send them through `/transactions/send` or your own node (nothing on pump.fun needs our relay), one at a time, waiting for each to confirm.
   </Step>
   <Step title="Sign and send the fee routing">
-    Once the create has confirmed: sign `feeRouting.transaction` with the creator wallet only (no mint key) and send it the same way. This is pump.fun's fee-sharing config: once set, the coin's creator fees go to its PURPS wallet permanently.
+    Once the create has confirmed: sign `feeRouting.transaction` with the creator wallet only (no mint key) and send it the same way. This is pump.fun's fee-sharing config. Once set, the coin's creator fees go to its PURPS wallet permanently.
 
     It was built with the launch and carries that blockhash, so send it within a minute or so. If it has aged out (`/transactions/send` answers `400` with `detail.code` `expired`), `POST /pumpfun/fees` with `mint` and `creatorWallet` builds a fresh one. The same call covers a build whose `feeRouting` came back `null`.
   </Step>
   <Step title="Done">
-    We watch the chain and register the strategy ourselves within about 15 seconds of the fee routing landing; you do not need to stay online. Poll `GET /coins/{mint}` until it answers, or `GET /redirects/{mint}` until `registered` is true. The coin is then live on purps.lol with its strategy running.
+    We watch the chain and register the strategy within about 15 seconds of the fee routing landing. You don't need to stay online. Poll `GET /coins/{mint}` until it answers, or `GET /redirects/{mint}` until `registered` is true. The coin is then live on purps.lol with its strategy running.
   </Step>
 </Steps>
 
@@ -43,10 +43,10 @@ A build sent without `strategy` still works the old way: send the create, send t
 
 ## What it costs
 
-The creator wallet needs about 0.04 SOL plus the dev buy (0.045 with a custom pair); the build checks that before uploading anything (when it can read the balance) and answers `400` when it is short. Fetching the logo by `imageUrl` is budgeted at 20 an hour per address; when the build answers `429` about image fetches, send the bytes as `image` instead.
+The creator wallet needs about 0.04 SOL plus the dev buy (0.045 with a custom pair). The build checks that before uploading anything (when it can read the balance) and answers `400` when it's short. Fetching the logo by `imageUrl` is budgeted at 20 an hour per address; when the build answers `429` about image fetches, send the bytes as `image` instead.
 
-A strategy that pays holders needs `holderPayoutsEnabled` in `/launch-options` to be true; when it is not, the build is refused with a `403` before anything is spent.
+A strategy that pays holders needs `holderPayoutsEnabled` in `/launch-options` to be true. When it isn't, the build is refused with a `403` before anything is spent.
 
 <Note>
-If a strategy sent with the build could not be attached, the lookup says so: `strategy.status` is `refused` with the reason on `GET /redirects/{mint}`, `waiting` until the chain shows what it needs, `attached` once done.
+If a strategy sent with the build couldn't be attached, the lookup says so: `strategy.status` is `refused` with the reason on `GET /redirects/{mint}`, `waiting` until the chain shows what it needs, `attached` once done.
 </Note>

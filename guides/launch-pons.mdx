@@ -5,7 +5,7 @@ description: "A coin on Pons, Robinhood Chain's launchpad, paired with ETH or a 
 icon: "/icons/pons.svg"
 ---
 
-Robinhood Chain is an EVM chain, so there is no relay: you send the transactions from your own wallet. One signed message covers the launch and its strategy; once the launch lands, we attach the strategy ourselves.
+Robinhood Chain is an EVM chain, so there's no relay: you send the transactions from your own wallet. One signed message covers the launch and its strategy. Once the launch lands, we attach the strategy.
 
 <Steps>
   <Step title="Read the options">
@@ -20,18 +20,18 @@ Robinhood Chain is an EVM chain, so there is no relay: you send the transactions
     { "preset": "balanced", "markets": ["ETH"] }
     ```
 
-    That is the same strategy the create page builds from the same choices; the [purps.lol guide](/guides/launch-solana#a-strategy-launch) has every option, and the full config is accepted too. A paying coin names its asset in `payoutMint` as a `0x` address from the launchpad's `payoutAssets`, or any token `GET /pons/assets/{address}` says is payable. A malformed config is a `400` here, so nothing is signed for nothing.
+    That's the same strategy the create page builds from the same choices. The [purps.lol guide](/guides/launch-solana#a-strategy-launch) has every option, and the full config works too. A paying coin names its asset in `payoutMint` as a `0x` address from the launchpad's `payoutAssets`, or any token `GET /pons/assets/{address}` says is payable. A malformed config is a `400` here, so you don't sign anything for nothing.
 
-    This is the one launch that still signs a message first: launching here is invite-only, and the signature is how the invite is checked before anything is spent. The message carries a `launches:` line saying the name, ticker, pair, creator tax and first buy in words, a `sets:` line saying the strategy in words, and a `launch:` hash that covers both. Read it, then sign `message` with `personal_sign`.
+    This is the one launch that signs a message first: launching here is invite-only, and the signature is how we check the invite before anything is spent. The message carries a `launches:` line saying the name, ticker, pair, creator tax and first buy in words, a `sets:` line saying the strategy in words, and a `launch:` hash that covers both. Sign `message` with `personal_sign`.
   </Step>
   <Step title="Submit">
-    `POST /pons/launches/submit` with the same terms (including the same `devBuy`, `creatorTaxBps` and `config`, which are part of what you signed), the logo (`image`, `imageUrl`, or `logoUrl` for one you already host), socials, `ts` and `signature`. The config is checked in full here (markets and leverage, payout assets, holder payouts open) before the logo is uploaded; a refusal says why. The response carries the `steps` to send and the coin's `walletKey`.
+    `POST /pons/launches/submit` with the same terms (including the same `devBuy`, `creatorTaxBps` and `config`, which are part of what you signed), the logo (`image`, `imageUrl`, or `logoUrl` for one you already host), socials, `ts` and `signature`. The config is checked in full here (markets and leverage, payout assets, holder payouts open) before the logo is uploaded; a refusal says why. You get back the `steps` to send and the coin's `walletKey`.
   </Step>
   <Step title="Send the steps">
-    Send each of `steps` from the creator wallet, in order, waiting for each receipt: an optional swap and approval when there is a dev buy in a token pair, then the launch. `requiredWei` tells you what the wallet needs; `shortByWei` is `0` when it has enough. The hash of the last step is the launch transaction.
+    Send each of `steps` from the creator wallet, in order, waiting for each receipt: an optional swap and approval when there's a dev buy in a token pair, then the launch. `requiredWei` is what the wallet needs; `shortByWei` is `0` when it has enough. The hash of the last step is the launch transaction.
   </Step>
   <Step title="Done">
-    We watch the chain for the launch from your wallet whose fees point at this coin's wallet, and attach the strategy ourselves within about 15 seconds of it confirming; you do not need to stay online. Poll `GET /pons/launches/{ref}` with the launch hash (or the token address) until `registered` carries the coin's address, then `GET /coins/{mint}`.
+    We watch the chain for the launch from your wallet whose fees point at this coin's wallet, and attach the strategy within about 15 seconds of it confirming. You don't need to stay online. Poll `GET /pons/launches/{ref}` with the launch hash (or the token address) until `registered` carries the coin's address, then `GET /coins/{mint}`.
   </Step>
 </Steps>
 
@@ -41,7 +41,7 @@ A launch built without `config`, or made outside the API, is registered by hand,
 
 1. `GET /pons/launches/{ref}` with the launch hash returns the token address and the `walletKey`.
 2. `POST /pons/register/prepare` with `creatorWallet`, `txHash`, `walletKey` and the `config` (the short form above, or the full one). The message says the strategy in words on a `sets:` line next to its hash. Sign it.
-3. `POST /pons/register/submit` with the same four fields plus `name`, `symbol`, `imageUrl` (an https link), `ts` and `signature`. If `registered` is false with a reason, the launch is not indexed yet: wait a few seconds and retry.
+3. `POST /pons/register/submit` with the same four fields plus `name`, `symbol`, `imageUrl` (an https link), `ts` and `signature`. If `registered` is false with a reason, the launch isn't indexed yet: wait a few seconds and retry.
 
 ## Sending a step
 
@@ -68,5 +68,5 @@ for (const step of steps) {
 ```
 
 <Note>
-If a strategy sent with the build could not be attached, the lookup says so: `strategy.status` is `refused` with the reason on `GET /pons/launches/{ref}`, `waiting` until the chain shows what it needs, `attached` once done.
+If a strategy sent with the build couldn't be attached, the lookup says so: `strategy.status` is `refused` with the reason on `GET /pons/launches/{ref}`, `waiting` until the chain shows what it needs, `attached` once done.
 </Note>

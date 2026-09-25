@@ -5,7 +5,7 @@ description: "A coin on purps.lol's Meteora curve, paired with SOL or any listed
 icon: "/icons/purps.svg"
 ---
 
-A purps.lol coin trades on a Meteora bonding curve until it raises the equivalent of 85 SOL, then graduates to a pool. We claim its creator fees for you and share each claim out where you choose with `feePreset`:
+A purps.lol coin trades on a Meteora bonding curve until it raises the equivalent of 85 SOL, then graduates to a pool. We claim its creator fees for you and split each claim the way you choose with `feePreset`:
 
 | Preset | Where creator fees go |
 | --- | --- |
@@ -14,30 +14,30 @@ A purps.lol coin trades on a Meteora bonding curve until it raises the equivalen
 | `creator` | All to your wallet, in the pair token, on every claim. |
 | `strategy` | Into a strategy you send with the launch: buybacks, perps, payouts. |
 
-Any other share is one `feeSplit` object instead: `{ strategyBps, airdropBps, creatorBps }` summing to 10000, for example `{ strategyBps: 6000, airdropBps: 0, creatorBps: 4000 }` for 60% into the strategy and 40% to you. Send `feePreset` as the closest label alongside it. A `strategyBps` above zero needs a `strategy` object, exactly as the `strategy` preset does.
+For any other share, send one `feeSplit` object instead: `{ strategyBps, airdropBps, creatorBps }` summing to 10000, for example `{ strategyBps: 6000, airdropBps: 0, creatorBps: 4000 }` for 60% into the strategy and 40% to you. Send `feePreset` as the closest label alongside it. A `strategyBps` above zero needs a `strategy` object, same as the `strategy` preset.
 
-On top of the platform's 1%, you set your own creator fee with `creatorFeeBps`: 50 to 980, that is 0.5% to 9.8% of curve volume, 100 (1%) by default. That is the fee the preset above routes.
+On top of the platform's 1%, you set your own creator fee with `creatorFeeBps`: 50 to 980, that's 0.5% to 9.8% of curve volume, 100 (1%) by default. That's the fee the preset above routes.
 
-There is no message to sign. The launch transaction can only land with your wallet's signature, and that is the proof.
+There's no message to sign. The launch transaction can only land with your wallet's signature, and that's the proof.
 
 <Steps>
   <Step title="Read the options">
     `GET /launch-options` and look under `purps`: who may launch, the creator fee range, and the payout assets. The three strategy presets sit at the top level, with what each one becomes in full. `GET /pairs` lists the pairs (SOL is `So11111111111111111111111111111111111111112`); `GET /markets` the perp markets and their leverage caps.
   </Step>
   <Step title="Build">
-    `POST /launches` with `name`, `symbol`, `quoteMint`, `feePreset`, `creatorWallet`, the logo (`image` as a data URL, or `imageUrl`), and optionally `feeSplit`, `devBuySol`, `creatorFeeBps`, `strategy` (a preset and the markets, see below), `description`, `twitter` and `telegram`. We check the strategy, upload the metadata, build the transactions and record the launch as pending. A bad strategy, or a wallet the launchpad does not admit, is refused before anything is uploaded.
+    `POST /launches` with `name`, `symbol`, `quoteMint`, `feePreset`, `creatorWallet`, the logo (`image` as a data URL, or `imageUrl`), and optionally `feeSplit`, `devBuySol`, `creatorFeeBps`, `strategy` (a preset and the markets, see below), `description`, `twitter` and `telegram`. We check the strategy, upload the metadata, build the transactions and record the launch as pending. A bad strategy, or a wallet the launchpad doesn't admit, is refused before anything is uploaded.
   </Step>
   <Step title="Sign and send">
-    Sign each of `transactions` with the creator wallet, and the one at `createIndex` with the mint keypair from `mintSecret` as well. `POST /transactions/send` them one at a time, in order, waiting for each to confirm before the next (a swap can go through your own node; the create at `createIndex` must go through the relay, which adds the launchpad's memo signature): when the pair is not SOL and there is a dev buy, the first transaction is a swap the launch spends. If `confirmed` is false, poll `GET /transactions/{signature}` until it is.
+    Sign each of `transactions` with the creator wallet, and the one at `createIndex` with the mint keypair from `mintSecret` as well. `POST /transactions/send` them one at a time, in order, waiting for each to confirm before the next (a swap can go through your own node; the create at `createIndex` must go through the relay, which adds the launchpad's memo signature). When the pair isn't SOL and there's a dev buy, the first transaction is a swap the launch spends. If `confirmed` is false, poll `GET /transactions/{signature}` until it is.
   </Step>
   <Step title="Wait for live">
-    Poll `GET /launches/{mint}` every few seconds until `status` is `live`, usually within half a minute of the create confirming. We watch the chain and flip it ourselves; you do not need to stay online, and if your process dies after sending, the launch still completes. A launch whose transaction never lands turns `failed` after about an hour.
+    Poll `GET /launches/{mint}` every few seconds until `status` is `live`, usually within half a minute of the create confirming. We watch the chain and flip it ourselves. You don't need to stay online; if your process dies after sending, the launch still completes. A launch whose transaction never lands turns `failed` after about an hour.
   </Step>
 </Steps>
 
 ## What it costs
 
-The creator wallet needs about 0.03 SOL plus the dev buy, and the build checks that before uploading anything (when it can read the balance). A dev buy on a non-SOL pair is converted from SOL by a swap transaction that runs before the launch; it is sized to the swap's worst-case output so it never spends more than the swap delivers.
+The creator wallet needs about 0.03 SOL plus the dev buy. The build checks that before uploading anything (when it can read the balance). A dev buy on a non-SOL pair is converted from SOL by a swap transaction that runs before the launch; it's sized to the swap's worst-case output so it never spends more than the swap delivers.
 
 ## The logo
 
@@ -47,7 +47,7 @@ Or host the metadata yourself and send `metadataUri` instead of a logo: a public
 
 ## A strategy launch
 
-With `feePreset: "strategy"`, send a `strategy` with the terms. It is checked before anything is uploaded, and registered by us the moment the launch goes live; you never come back for a second signature.
+With `feePreset: "strategy"`, send a `strategy` with the terms. We check it before anything is uploaded and register it the moment the launch goes live. There's no second signature.
 
 A strategy is a preset and the markets:
 
@@ -55,13 +55,13 @@ A strategy is a preset and the markets:
 { "preset": "balanced", "markets": ["ETH"] }
 ```
 
-That expands to exactly the config the create page builds from the same choices, so a coin launched through the API and one launched on the page are the same coin. The same short form is accepted everywhere the API takes a strategy: here, on pump.fun and Pons, on a redirect, a later attach, and a creator-authority strategy change.
+That expands to exactly the config the create page builds from the same choices, so a coin launched through the API and one launched on the page are the same coin. The same short form works everywhere the API takes a strategy: here, on pump.fun and Pons, on a redirect, a later attach, and a creator-authority strategy change.
 
 - `preset` is `steady`, `balanced` or `degen`: the fee split, the take-profit and dip-buy rules, and each leg's reserve mode, as `/launch-options` lists them. `balanced`, for instance, is 5% of each fee to buybacks, 75% to trading and 20% to the reserve.
 - `markets` is a list of names from `/markets`, up to 10. Every leg is long at 2x, and the weight is split evenly.
-- `legs` instead of `markets` when a leg is not long at 2x: `[{ "market": "ETH", "direction": "short", "leverage": 5 }]`. `direction` is `long` (default) or `short`; `leverage` a whole number from 1 to 100, within the market's cap.
+- `legs` instead of `markets` when a leg isn't long at 2x: `[{ "market": "ETH", "direction": "short", "leverage": 5 }]`. `direction` is `long` (default) or `short`; `leverage` a whole number from 1 to 100, within the market's cap.
 - `rewardMode` decides what profits do: `burn` (the default) buys and burns the coin, `holders` airdrops the coin, `backed` airdrops `payoutMint`. Naming a `payoutMint` makes it `backed` on its own: a tokenised stock or major from the launchpad's `payoutAssets`, or any Solana mint with a real market. `payoutMintsExtra` adds up to four more assets, split evenly. Paying coins need `holderPayoutsEnabled` to be true.
-- `ownerControls: true` asks for [creator authority](/guides/creator-authority) from launch: you can steer the coin from its page or through the API, every move signed and shown to holders. It is honoured while the platform has creator authority open.
+- `ownerControls: true` asks for [creator authority](/guides/creator-authority) from launch: you can steer the coin from its page or through the API, every move signed and shown to holders. It applies while the platform has creator authority open.
 - No perps at all: `{ "preset": "airdrop" }`, with no markets. Every fee goes to the buyback and is airdropped to holders as the coin, or as `payoutMint` when you name one.
 
 A backed coin with creator authority, then:
@@ -76,7 +76,7 @@ A backed coin with creator authority, then:
 
 ### The long way
 
-The short form covers what the create page offers. For anything else (uneven weights, your own fee split, a take-profit or stop-loss on one leg, a different reserve mode) send the full config instead. It is what the short form expands to, and it is accepted everywhere the short form is:
+The short form covers what the create page offers. For anything else (uneven weights, your own fee split, a take-profit or stop-loss on one leg, a different reserve mode) send the full config instead. It's what the short form expands to, and it works everywhere the short form does:
 
 ```json
 {

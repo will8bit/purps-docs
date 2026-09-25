@@ -9,14 +9,14 @@ Any pump.fun coin whose on-chain creator you are can have its fees redirected. T
 
 <Steps>
   <Step title="Check the coin">
-    `GET /redirects/{mint}` shows `feeWallet` (where the fees must go), `redirected` (whether they already do) and `registered` (whether a strategy is attached).
+    `GET /redirects/{mint}` returns `feeWallet` (where the fees must go), `redirected` (whether they already do) and `registered` (whether a strategy is attached).
   </Step>
   <Step title="Route the fees">
     If not redirected: `POST /pumpfun/fees` with `mint` and `creatorWallet`, sign the returned transaction with the creator wallet, and send it through `/transactions/send`.
   </Step>
   <Step title="Register the strategy">
-    `POST /redirects` with `mint` and the strategy as `config`: a preset and the markets, `{ "preset": "balanced", "markets": ["ETH"] }`, with every option on the [purps.lol page](/guides/launch-solana#a-strategy-launch); the full config is accepted too. No signature needed: the fee routing on chain is the proof. If it answers `registered: false`, the chain has not shown us the routing yet: wait a few seconds and call it again. `registered: true` and the coin is live on purps.lol with its strategy running.
+    `POST /redirects` with `mint` and the strategy as `config`: a preset and the markets, `{ "preset": "balanced", "markets": ["ETH"] }`, with every option on the [purps.lol page](/guides/launch-solana#a-strategy-launch). The full config works too. No signature needed: the fee routing on chain is the proof. If it answers `registered: false`, the chain hasn't shown us the routing yet. Wait a few seconds and call it again. `registered: true` means the coin is live on purps.lol with its strategy running.
   </Step>
 </Steps>
 
-A coin's strategy is set once, at registration. A coin launched through `POST /pumpfun/launches` with a `strategy` in the build does not come here: we register that one ourselves once its fee routing lands.
+A coin's strategy is set once, at registration. A coin launched through `POST /pumpfun/launches` with a `strategy` in the build doesn't come here: we register that one ourselves once its fee routing lands.

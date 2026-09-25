@@ -7,17 +7,17 @@ icon: "key-round"
 
 There are no API keys. Your wallet is your identity, in two ways:
 
-- **Signed transactions.** Launching on purps.lol or pump.fun, routing fees, sending: the transaction itself is what you sign, in your wallet, and that is the authorisation. A launch is one call that returns unsigned transactions; there is no message.
-- **Signed terms.** Three things sign a short text message first, because the terms have to be agreed before anything happens on chain: a Pons launch (invite-only, so the invite is checked before anything is spent; the one message covers the launch and its strategy), wiring a strategy onto a coin launched without one (on purps.lol, or a Pons launch made without a config), and creator authority. These calls come as a `prepare` / `submit` pair.
+- **Signed transactions.** Launching on purps.lol or pump.fun, routing fees, sending: you sign the transaction itself in your wallet, and that's the authorisation. A launch is one call that returns unsigned transactions. There's no message.
+- **Signed terms.** Three things sign a short text message first: a Pons launch (it's invite-only, so we check the invite before anything is spent; one message covers the launch and its strategy), wiring a strategy onto a coin launched without one (on purps.lol, or a Pons launch made without a config), and creator authority. These come as a `prepare` / `submit` pair.
 
 The pair works like this:
 
 <Steps>
   <Step title="Prepare">
-    `POST …/prepare` with the terms. It returns the exact text to sign as `message`, and `ts`, the timestamp embedded in it. Nothing is stored or spent.
+    `POST …/prepare` with the terms. You get the exact text to sign as `message`, and `ts`, the timestamp embedded in it. Nothing is stored or spent.
   </Step>
   <Step title="Sign">
-    Read `message`, then sign it in your wallet. It spells the terms out in words next to their hash (a `launches:` or `sets:` line), so you read what you agree to and nothing can change between the two calls. A strategy sent the short way (`{ preset, markets }`) is expanded first, so the words and the hash describe the full strategy it becomes.
+    Sign `message` in your wallet. It spells the terms out in words next to their hash (a `launches:` or `sets:` line), so nothing can change between the two calls. A strategy sent the short way (`{ preset, markets }`) is expanded first, so the words and the hash describe the full strategy it becomes.
   </Step>
   <Step title="Submit">
     `POST …/submit` with the same terms, plus `ts` and `signature`. Signatures are valid for five minutes.
@@ -26,7 +26,7 @@ The pair works like this:
 
 ## Solana
 
-Sign the message's UTF-8 bytes with ed25519, exactly as a wallet's `signMessage` does. No prefix, no hashing. Send the signature as base58.
+Sign the message's UTF-8 bytes with ed25519, the same thing a wallet's `signMessage` does. No prefix, no hashing. Send the signature as base58.
 
 ```js
 import nacl from "tweetnacl";
@@ -49,7 +49,7 @@ await fetch(`https://purps.lol/api/v2/coins/${mint}/strategy/submit`, {
 });
 ```
 
-With a browser wallet, `const sig = await wallet.signMessage(bytes)` gives the same bytes to base58-encode.
+With a browser wallet, `const sig = await wallet.signMessage(bytes)` gives you the same bytes to base58-encode.
 
 ## Pons (Robinhood Chain)
 
@@ -63,7 +63,7 @@ Send the 0x-hex signature as returned. The wallet address in the message is lowe
 
 ## Creator authority
 
-Steering a coin adds one thing: a `nonce`. Prepare issues it bound to the coin, the wallet that will sign and the exact action; it rides inside the signed words and lives five minutes, and the signature you send with it is good once. Send it back with `ts` and `signature`. The message is plain English: a `does:` or `sets:` line says what will happen, `why:` is your note, and holders read both on the coin's Changes tab.
+Steering a coin adds one thing: a `nonce`. Prepare issues it bound to the coin, the signing wallet and the exact action. It sits inside the signed words, lasts five minutes, and the signature you send with it works once. Send it back with `ts` and `signature`. The message is plain English: a `does:` or `sets:` line says what will happen, `why:` is your note, and holders see both on the coin's Changes tab.
 
 One action, end to end, from a keypair file:
 
@@ -114,15 +114,15 @@ for (;;) {
 }
 ```
 
-The signature is checked against the wallet named in prepare: the coin's owner, or a platform admin wallet. Every check that guards money runs at submit, on the server's own figures, so a move the coin page would refuse is refused here too with a `422` and the reason.
+The signature is checked against the wallet named in prepare: the coin's owner, or a platform admin wallet. Every check that guards money runs at submit, on the server's own figures. If the coin page would refuse a move, submit refuses it too, with a `422` and the reason.
 
 ## Transactions
 
-We never sign your transactions. On Solana, a build returns unsigned transactions as base64; you sign them and send them through your own node or `POST /transactions/send`. The relay is only required for a purps.lol create, where it adds the launchpad's memo signature, and it only forwards the shapes a launch flow produces. On Pons, submit returns EVM transactions as `{ to, data, value, chainId }` steps that you send from your own wallet.
+We never sign your transactions. On Solana, a build returns unsigned transactions as base64. You sign them and send them through your own node or `POST /transactions/send`. The relay is only required for a purps.lol create, where it adds the launchpad's memo signature, and it only forwards the shapes a launch flow produces. On Pons, submit returns EVM transactions as `{ to, data, value, chainId }` steps that you send from your own wallet.
 
-When a flow gives you more than one transaction, send them in order and **wait for each to confirm before sending the next**: a later one spends what an earlier one produced. `/transactions/send` waits up to 8 seconds and tells you `confirmed`; if false, poll `GET /transactions/{signature}` every couple of seconds until it is.
+When a flow gives you more than one transaction, send them in order and **wait for each to confirm before sending the next**: a later one spends what an earlier one produced. `/transactions/send` waits up to 8 seconds and returns `confirmed`. If that's false, poll `GET /transactions/{signature}` every couple of seconds until it's true.
 
-A launch's create transaction also needs the mint keypair's signature. The build returns it as `mintSecret`; it has no power beyond that one transaction.
+A launch's create transaction also needs the mint keypair's signature. The build returns it as `mintSecret`. It has no power beyond that one transaction.
 
 ```js
 import { Keypair, VersionedTransaction } from "@solana/web3.js";

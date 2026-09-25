@@ -1,51 +1,88 @@
 ---
 title: "Errors and limits"
 sidebarTitle: "Errors and limits"
-description: "One envelope, plain reasons, honest rate limits."
+description: "The error envelope, the codes to branch on, and the rate limits."
 icon: "triangle-alert"
 ---
 
 ## Errors
 
-Every failure is `{ "ok": false, "error": "…" }` with a short reason in plain words and a matching HTTP status:
+Every failure is `{ "ok": false, "error": "…", "code": "…", "retryable": … }` with a matching HTTP status. `error` is a short reason for people. `code` is a fixed word for your script. Branch on `code`; the message may change.
 
-| Status | Meaning |
-| --- | --- |
-| `400` | Something in the request is wrong. The reason says what. |
-| `401` | The signature is invalid, its timestamp is too old, or the nonce was not issued for this wallet and action. |
-| `403` | The wallet may not do this yet, the feature is not open, or the address is blocked. |
-| `404` | The coin or launch does not exist. |
-| `409` | The action does not fit the coin's state. |
-| `410` | An old `/api/v1` write address. Use `/api/v2`; v1 reads still answer. |
-| `413` | The body is too large. |
-| `422` | The strategy, its parameters or a money check fail validation. The reason says why. |
-| `423` | Creator authority on the coin is frozen. |
-| `429` | Too many requests (the per-minute limiter adds `Retry-After`; the hourly budgets and creator-authority cooldowns say how long in the reason). |
-| `500` | Something broke on our side. Try again. |
-| `503` | We could not reach something we depend on, the site is mid-deploy, or the API is paused. |
+A `429` from the per-minute limiter and the paused `503` also carry `retryAfterSeconds`, the same figure as the `Retry-After` header. Other `429`s (hourly budgets, creator-authority cooldowns) say how long in the message.
 
-A `503` with a `Retry-After` header and the reason `the public API is paused for maintenance — check back soon` means the whole API is switched off for a while. Nothing is wrong with your request; come back after the wait.
+| Code | HTTP | Meaning | Retryable |
+| --- | --- | --- | --- |
+| `invalid_request` | `400` | Something in the request is wrong. The message says what. | no |
+| `expired` | `400` | A relayed transaction's blockhash aged out. Rebuild and sign again. | no |
+| `rejected` | `400` | The chain refused a relayed transaction. | no |
+| `unauthorized` | `401` | The signature is invalid, its timestamp is too old, or the nonce wasn't issued for this wallet and action. | no |
+| `forbidden` | `403` | The wallet can't do this yet, or the feature isn't open. | no |
+| `blocked` | `403` | This address is blocked. | no |
+| `not_found` | `404` | The coin or launch doesn't exist. | no |
+| `conflict` | `409` | The action doesn't fit the coin's state. | no |
+| `gone` | `410` | An old `/api/v1` write address. Use `/api/v2`; v1 reads still answer. | no |
+| `payload_too_large` | `413` | The body is too large. | no |
+| `refused` | `422` | The strategy, its parameters or a money check failed validation. The message says which. | no |
+| `frozen` | `423` | Creator authority on the coin is frozen. | no |
+| `rate_limited` | `429` | Too many requests. | yes |
+| `internal` | `500` | Something broke on our side. Try again. | yes |
+| `unavailable` | `503` | We couldn't reach something we depend on, or the site is mid-deploy. | yes |
+| `paused` | `503` | The whole API is switched off for a while. | yes |
+
+A `503` with code `paused`, a `Retry-After` header and the reason `the public API is paused for maintenance — check back soon` means the whole API is off for a while. Nothing is wrong with your request. Come back after the wait.
 
 ## Rate limits
 
-Limits are per address (IPv6: per /64 block) and per endpoint, in one-minute windows. Every answer from the API itself says what the limit is (the 503 while paused and the 410 on old v1 addresses carry no limit headers):
+Limits are per address (IPv6: per /64 block) and per endpoint, in one-minute windows. Every answer from the API itself says what the limit is (the `503` while paused and the `410` on old v1 addresses carry no limit headers):
 
 ```
 RateLimit-Limit: 60
 RateLimit-Policy: 60;w=60
 ```
 
-Responses that are not cached (writes, `prepare` and `submit`, every refusal) also say where you stand:
+Responses that aren't cached (writes, `prepare` and `submit`, every refusal) also say where you stand:
 
 ```
 RateLimit-Remaining: 41
 RateLimit-Reset: 23
 ```
 
-Cacheable reads leave those two out on purpose: an edge cache would otherwise hand one caller's remaining allowance to the next. A `429` from the per-minute limiter adds `Retry-After`; the others say how long in the reason. Each endpoint's limit is on its reference page. Reads may be cached at the edge for a few seconds, so two calls in a row can return the same figures; writes are never cached.
+Cached reads leave those two out on purpose: an edge cache would otherwise hand one caller's remaining allowance to the next. Cached reads can also return the same figures twice in a row; the cache column below says for how long. Writes are never cached.
 
-Hourly budgets sit on top of the per-minute limits, and their `429` says so in the reason. Launch builds: 8 an hour per wallet, 20 an hour per address, 240 an hour site-wide, on purps.lol and on pump.fun each; a new fee level on purps.lol needs its own on-chain setup and is allowed 2 an hour per address and 6 an hour site-wide. Fetching a logo by `imageUrl`: 20 an hour per address, 200 an hour site-wide; when that runs out the build asks for `image` as a data URL instead, which is never budgeted. Pons: 10 launch builds and 20 registrations an hour per wallet. Creator authority: 60 actions, 30 strategy changes, 10 requests and 20 handovers an hour per address, plus a per-coin count of position actions a day and a cooldown after each change; the limit and the running cooldowns are reported on `GET /coins/{mint}/authority`.
+| Endpoint | Limit | Cached read |
+| --- | --- | --- |
+| `GET /coins` | 60 a minute | yes, 10 seconds |
+| `GET /coins/{mint}` | 30 a minute | yes, 5 seconds |
+| `GET /index` | 60 a minute | yes, 60 seconds |
+| `GET /search` | 60 a minute | yes, 10 seconds |
+| `GET /launches` | 60 a minute | yes, 5 seconds |
+| `POST /launches` | 10 a minute | no |
+| `GET /markets` | 60 a minute | yes, 30 seconds |
+| `GET /pairs` | 60 a minute | yes, 60 seconds |
+| `GET /launch-options` | 60 a minute | yes, 10 seconds |
+| `GET /launches/{mint}` | 120 a minute | yes, 3 seconds |
+| `POST /pumpfun/launches` | 10 a minute | no |
+| `POST /pumpfun/fees` | 30 a minute | no |
+| `GET /redirects/{mint}` | 10 a minute | yes, 30 seconds |
+| `POST /redirects` | 10 a minute | no |
+| `POST /pons/launches/prepare` | 30 a minute | no |
+| `POST /pons/launches/submit` | 4 a minute | no |
+| `GET /pons/launches/{ref}` | 30 a minute | no |
+| `GET /pons/assets/{address}` | 60 a minute | yes, 60 seconds |
+| `POST /pons/register/prepare` | 30 a minute | no |
+| `POST /pons/register/submit` | 10 a minute | no |
+| `POST /coins/{mint}/strategy/prepare` | 30 a minute | no |
+| `POST /coins/{mint}/strategy/submit` | 10 a minute | no |
+| `GET /coins/{mint}/authority` | 60 a minute | yes, 3 seconds |
+| `GET /coins/{mint}/changes` | 60 a minute | yes, 5 seconds |
+| `POST /coins/{mint}/authority/prepare` | 30 a minute | no |
+| `POST /coins/{mint}/authority/submit` | 10 a minute | no |
+| `POST /transactions/send` | 60 a minute | no |
+| `GET /transactions/{signature}` | 120 a minute | yes, 2 seconds |
+
+Hourly budgets sit on top of the per-minute limits, and their `429` says so in the message. Launch builds: 8 an hour per wallet, 20 an hour per address, 240 an hour site-wide, on purps.lol and on pump.fun each; a new fee level on purps.lol needs its own on-chain setup and is allowed 2 an hour per address and 6 an hour site-wide. Fetching a logo by `imageUrl`: 20 an hour per address, 200 an hour site-wide; when that runs out the build asks for `image` as a data URL instead, which is never budgeted. Pons: 10 launch builds and 20 registrations an hour per wallet. Creator authority: 60 actions, 30 strategy changes, 10 requests and 20 handovers an hour per address, plus a per-coin count of position actions a day and a cooldown after each change; the limit and the running cooldowns are on `GET /coins/{mint}/authority`.
 
 ## Need more?
 
-Building something the limits get in the way of? Message Will on X at [@will8bit](https://x.com/will8bit) with what you are building and the address you call from. We raise the limits on that address, usually the same day. No key, no form.
+If the limits get in your way, message Will on X at [@will8bit](https://x.com/will8bit) with what you're building and the address you call from. We raise the limit on that address, usually the same day. No key, no form.
