@@ -37,7 +37,7 @@ for coin in r.json()["data"]["items"]:
 
 Every response is `{ "ok": true, "data": … }` or `{ "ok": false, "error": "…" }`. Base URL: `https://purps.lol/api/v2`.
 
-`GET /coins` is the ranked list. `GET /launches` is the purps.lol launches, filterable by `status`, `curve`, `quoteMint` or `creator` (a wallet).
+`GET /coins` is the ranked list; add `creator=<wallet>` for one wallet's coins. `GET /launches` is the purps.lol launches, filterable by `status`, `curve`, `quoteMint` or `creator`.
 
 ## How it works
 

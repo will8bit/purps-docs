@@ -205,6 +205,14 @@
                 "30d"
               ]
             }
+          },
+          {
+            "name": "creator",
+            "in": "query",
+            "description": "Only coins whose creator rewards this wallet holds: the launching wallet, or whoever it handed them to.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "x-rate-limit": "60 a minute",
@@ -4249,6 +4257,10 @@
       "SendTransaction": {
         "type": "object",
         "properties": {
+          "wait": {
+            "type": "integer",
+            "description": "How many seconds to wait for the transaction to confirm before answering, 0 to 30. Default 8. With 30, most launches answer confirmed and you never need the status call."
+          },
           "transaction": {
             "type": "string",
             "description": "The signed transaction, base64.",
@@ -4259,6 +4271,10 @@
       "SendResult": {
         "type": "object",
         "properties": {
+          "failed": {
+            "type": "boolean",
+            "description": "True when the chain ran the transaction and it failed. Rebuild rather than resend."
+          },
           "signature": {
             "type": "string",
             "description": "The transaction signature."
