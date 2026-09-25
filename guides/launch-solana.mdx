@@ -28,7 +28,7 @@ There is no message to sign. The launch transaction can only land with your wall
     `POST /launches` with `name`, `symbol`, `quoteMint`, `feePreset`, `creatorWallet`, the logo (`image` as a data URL, or `imageUrl`), and optionally `feeSplit`, `devBuySol`, `creatorFeeBps`, `strategy` (a preset and the markets, see below), `description`, `twitter` and `telegram`. We check the strategy, upload the metadata, build the transactions and record the launch as pending. A bad strategy, or a wallet the launchpad does not admit, is refused before anything is uploaded.
   </Step>
   <Step title="Sign and send">
-    Sign each of `transactions` with the creator wallet, and the one at `createIndex` with the mint keypair from `mintSecret` as well. `POST /transactions/send` them one at a time, in order, waiting for each to confirm before the next: when the pair is not SOL and there is a dev buy, the first transaction is a swap the launch spends. If `confirmed` is false, poll `GET /transactions/{signature}` until it is.
+    Sign each of `transactions` with the creator wallet, and the one at `createIndex` with the mint keypair from `mintSecret` as well. `POST /transactions/send` them one at a time, in order, waiting for each to confirm before the next (a swap can go through your own node; the create at `createIndex` must go through the relay, which adds the launchpad's memo signature): when the pair is not SOL and there is a dev buy, the first transaction is a swap the launch spends. If `confirmed` is false, poll `GET /transactions/{signature}` until it is.
   </Step>
   <Step title="Wait for live">
     Poll `GET /launches/{mint}` every few seconds until `status` is `live`, usually within half a minute of the create confirming. We watch the chain and flip it ourselves; you do not need to stay online, and if your process dies after sending, the launch still completes. A launch whose transaction never lands turns `failed` after about an hour.
@@ -42,6 +42,8 @@ The creator wallet needs about 0.03 SOL plus the dev buy, and the build checks t
 ## The logo
 
 Send `image` as a data URL (`data:image/png;base64,…`; PNG, JPEG, WebP or GIF, 512KB max) or `imageUrl` as a public https link straight to the file. Fetching by URL is budgeted at 20 an hour per address; when the build answers `429` about image fetches, send the bytes as `image` instead.
+
+Or host the metadata yourself and send `metadataUri` instead of a logo: a public https link to a JSON file with `name`, `symbol` and an https `image`, the standard token metadata shape. We fetch it once to check it and upload nothing.
 
 ## A strategy launch
 

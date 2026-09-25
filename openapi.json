@@ -2470,7 +2470,7 @@
         ],
         "operationId": "sendTransaction",
         "summary": "Send a signed transaction",
-        "description": "Relay a signed Solana transaction from a launch flow: the launch itself, the swap in front of it, the fee-routing step. Only those shapes are forwarded; anything else is refused. Waits up to 8 seconds for confirmation. `confirmed: false` means it was sent but not yet seen; poll /transactions/{signature}. A refused transaction is a 400 whose `detail.code` is `expired` (the blockhash aged out: rebuild and sign again) or `rejected`.",
+        "description": "Relay a signed Solana transaction from a launch flow: the launch itself, the swap in front of it, the fee-routing step. Only those shapes are forwarded; anything else is refused. Optional for everything but a purps.lol create, which needs the launchpad's memo signature this relay adds; anything else can go through your own node. Waits up to 8 seconds for confirmation. `confirmed: false` means it was sent but not yet seen; poll /transactions/{signature}. A refused transaction is a 400 whose `detail.code` is `expired` (the blockhash aged out: rebuild and sign again) or `rejected`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -4051,6 +4051,10 @@
             "type": "string",
             "description": "A public https link to the logo instead of `image`. Fetched by us under the same size and type rules."
           },
+          "metadataUri": {
+            "type": "string",
+            "description": "Instead of a logo: a metadata file you host at a public https address, with `name`, `symbol` and an https `image`. We fetch it once to check it and upload nothing; the launch names it as its metadata. For pump.fun, the file should name https://pump.fun as its home or pump.fun marks the coin as created off-site."
+          },
           "description": {
             "type": "string",
             "description": "Up to 500 characters. The coin's website in its metadata is always its purps.lol page; add your own links as `twitter` and `telegram`."
@@ -4111,6 +4115,10 @@
           "imageUrl": {
             "type": "string",
             "description": "A public https link to the logo instead of `image`. Fetched by us under the same size and type rules."
+          },
+          "metadataUri": {
+            "type": "string",
+            "description": "Instead of a logo: a metadata file you host at a public https address, with `name`, `symbol` and an https `image`. We fetch it once to check it and upload nothing; the launch names it as its metadata. For pump.fun, the file should name https://pump.fun as its home or pump.fun marks the coin as created off-site."
           },
           "description": {
             "type": "string",
@@ -4412,6 +4420,14 @@
           "imageUrl": {
             "type": "string",
             "description": "A public https link to the logo instead of `image`. Fetched by us under the same size and type rules."
+          },
+          "metadataUri": {
+            "type": "string",
+            "description": "Instead of a logo: a metadata file you host at a public https address, with `name`, `symbol` and an https `image`. We fetch it once to check it and upload nothing; the launch names it as its metadata. For pump.fun, the file should name https://pump.fun as its home or pump.fun marks the coin as created off-site."
+          },
+          "logoUrl": {
+            "type": "string",
+            "description": "A logo you already host, a public https link, instead of `image` or `imageUrl`: nothing is uploaded."
           },
           "description": {
             "type": "string",

@@ -25,7 +25,7 @@ The coin is created on pump.fun with its on-chain creator set to the coin's PURP
     You get back `transactions`, `createIndex`, `mintSecret` and `feeRouting.transaction`.
   </Step>
   <Step title="Sign and send the create">
-    Sign the `transactions` (the one at `createIndex` with the mint key too) and send them through `/transactions/send`, one at a time, waiting for each to confirm.
+    Sign the `transactions` (the one at `createIndex` with the mint key too) and send them through `/transactions/send` or your own node (nothing on pump.fun needs our relay), one at a time, waiting for each to confirm.
   </Step>
   <Step title="Sign and send the fee routing">
     Once the create has confirmed: sign `feeRouting.transaction` with the creator wallet only (no mint key) and send it the same way. This is pump.fun's fee-sharing config: once set, the coin's creator fees go to its PURPS wallet permanently.
