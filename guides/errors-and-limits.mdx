@@ -59,7 +59,7 @@ RateLimit-Remaining: 41
 RateLimit-Reset: 23
 ```
 
-Cached reads leave those two out on purpose: an edge cache would otherwise hand one caller's remaining allowance to the next. Cached reads can also return the same figures twice in a row; the cache column below says for how long. Writes are never cached.
+Cached reads leave those two out on purpose: an edge cache would otherwise hand one caller's remaining allowance to the next. Cached reads are served from the edge for the window in the cache column below, so a repeat call inside it returns the same figures and does not count against your limit. Writes are never cached.
 
 | Endpoint | Limit | Cached read |
 | --- | --- | --- |
