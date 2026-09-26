@@ -9,7 +9,7 @@ Prepare, sign, submit. The signature must come from the launch's `creatorWallet`
 
 ## Attach a strategy later
 
-A purps.lol coin launched without a strategy can get one afterwards. From then on the whole creator fee goes into it. `POST /coins/{mint}/strategy/prepare` with `config`, sign, then `POST /coins/{mint}/strategy/submit` with the same `config`, `ts` and `signature`. The `config` is a preset and the markets, `{ "preset": "balanced", "markets": ["ETH"] }`, with every option on the [purps.lol page](/guides/launch-solana#a-strategy-launch). The full config works too.
+A purps.lol coin launched without a strategy can get one afterwards. From then on the whole creator fee goes into it. `POST /coins/{mint}/strategy/prepare` with `config`, sign, then `POST /coins/{mint}/strategy/submit` with the same `config`, `ts` and `signature`. The `config` in its shortest form is a preset and the markets, `{ "preset": "balanced", "markets": ["ETH"] }`, every market long at 2x. For a short or your own leverage send `legs` instead of `markets`; for anything else, the full config. All three forms are on the [purps.lol page](/guides/launch-solana#a-strategy-launch).
 
 Prepare validates the `config` first: a malformed one is a `400` that names the field, so you don't sign anything for nothing. The message carries the strategy in words on a `sets:` line (the fee split, what profits do, the take-profit and dip-buy rules, the markets) next to its hash. A short form is expanded before the words and the hash are made, so the message describes the full strategy it becomes, and sending the same short form to submit gives the same hash.
 

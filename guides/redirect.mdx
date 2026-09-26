@@ -15,7 +15,7 @@ Any pump.fun coin whose on-chain creator you are can have its fees redirected. T
     If not redirected: `POST /pumpfun/fees` with `mint` and `creatorWallet` (with your `X-Helius-Key` header), sign the returned transaction with the creator wallet, and send it through `/transactions/send`.
   </Step>
   <Step title="Register the strategy">
-    `POST /redirects` with `mint` and the strategy as `config`: a preset and the markets, `{ "preset": "balanced", "markets": ["ETH"] }`, with every option on the [purps.lol page](/guides/launch-solana#a-strategy-launch). The full config works too. No signature needed: the fee routing on chain is the proof. If it answers `registered: false`, the chain hasn't shown us the routing yet. Wait a few seconds and call it again. `registered: true` means the coin is live on purps.lol with its strategy running.
+    `POST /redirects` with `mint` and the strategy as `config`. Shortest form: a preset and the markets, `{ "preset": "balanced", "markets": ["ETH"] }`, every market long at 2x. For a short or your own leverage send `legs` instead of `markets`; for anything else, the full config. All three forms are on the [purps.lol page](/guides/launch-solana#a-strategy-launch). No signature needed: the fee routing on chain is the proof. If it answers `registered: false`, the chain hasn't shown us the routing yet. Wait a few seconds and call it again. `registered: true` means the coin is live on purps.lol with its strategy running.
   </Step>
 </Steps>
 

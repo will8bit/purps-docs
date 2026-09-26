@@ -3793,7 +3793,7 @@
       },
       "StrategyShorthand": {
         "type": "object",
-        "description": "The short form of a strategy: a preset and the markets. It expands to exactly the full config the site's create page builds from the same choices, so a coin launched through the API and one launched on the page are the same coin. Works everywhere a Strategy does: `strategy` on a purps.lol or pump.fun build, `config` on a redirect, a Pons launch or registration, a later attach, and a creator-authority strategy change. Where the strategy is signed, prepare and submit both expand it, and the words and hash in the message describe the expanded strategy. Anything with `splitBuybackBps` is taken as the full form instead.",
+        "description": "The short form of a strategy: a preset plus either `markets` (every market long at 2x) or `legs` (a side and leverage per market). It expands to exactly the full config the site's create page builds from the same choices, so a coin launched through the API and one launched on the page are the same coin. Works everywhere a Strategy does: `strategy` on a purps.lol or pump.fun build, `config` on a redirect, a Pons launch or registration, a later attach, and a creator-authority strategy change. Where the strategy is signed, prepare and submit both expand it, and the words and hash in the message describe the expanded strategy. Anything with `splitBuybackBps` is taken as the full form instead.",
         "properties": {
           "preset": {
             "type": "string",
@@ -3818,7 +3818,7 @@
             "items": {
               "type": "object"
             },
-            "description": "Instead of `markets`, when a leg is not long at 2x: `[{ market, direction?, leverage? }]`. `direction` is `long` (default) or `short`; `leverage` a whole number from 1 to 100 (default 2), within the market's cap. Weights are split evenly."
+            "description": "Instead of `markets`, to set a side or a leverage per market: `[{ market, direction?, leverage? }]`. `direction` is `long` (default) or `short`; `leverage` a whole number from 1 to 100 (default 2), within the market's cap on /markets. Leave a field out to take its default. Weights are still split evenly; for uneven weights send the full Strategy."
           },
           "rewardMode": {
             "type": "string",

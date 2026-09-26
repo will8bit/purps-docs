@@ -14,13 +14,13 @@ Robinhood Chain is an EVM chain, so there's no relay: you send the transactions 
   <Step title="Prepare">
     `POST /pons/launches/prepare` with `name`, `symbol`, `creatorWallet`, the `config`, and optionally `pairToken` (an `address` from `pons` in `/pairs`; the zero address or omitted means ETH), `devBuy` (ETH, decimal string) and `creatorTaxBps`.
 
-    The config is a preset and the markets:
+    The config in its shortest form is a preset and the markets, every one long at 2x:
 
     ```json
     { "preset": "balanced", "markets": ["ETH"] }
     ```
 
-    That's the same strategy the create page builds from the same choices. The [purps.lol guide](/guides/launch-solana#a-strategy-launch) has every option, and the full config works too. A paying coin names its asset in `payoutMint` as a `0x` address from the launchpad's `payoutAssets`, or any token `GET /pons/assets/{address}` says is payable. A malformed config is a `400` here, so you don't sign anything for nothing.
+    For a short or your own leverage send `legs` instead of `markets`; for anything else, the full config. The [purps.lol guide](/guides/launch-solana#a-strategy-launch) has all three forms and every option. A paying coin names its asset in `payoutMint` as a `0x` address from the launchpad's `payoutAssets`, or any token `GET /pons/assets/{address}` says is payable. A malformed config is a `400` here, so you don't sign anything for nothing.
 
     This is the one launch that signs a message first: launching here is invite-only, and the signature is how we check the invite before anything is spent. The message carries a `launches:` line saying the name, ticker, pair, creator tax and first buy in words, a `sets:` line saying the strategy in words, and a `launch:` hash that covers both. Sign `message` with `personal_sign`.
   </Step>

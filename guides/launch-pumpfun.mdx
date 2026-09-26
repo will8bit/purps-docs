@@ -14,13 +14,13 @@ The coin is created on pump.fun with its on-chain creator set to the coin's PURP
   <Step title="Build">
     `POST /pumpfun/launches` with `name`, `symbol`, `creatorWallet`, the logo (`image` as a data URL, or `imageUrl`), the `strategy`, and optionally `quoteMint` (from `pumpfun` in `/pairs`; SOL when omitted), `devBuySol`, `description`, `twitter` and `telegram`.
 
-    The strategy is a preset and the markets:
+    The strategy in its shortest form is a preset and the markets, every one long at 2x:
 
     ```json
     { "preset": "balanced", "markets": ["ETH"] }
     ```
 
-    That's the same strategy the create page builds from the same choices. The [purps.lol guide](/guides/launch-solana#a-strategy-launch) has every option, and the full config works too. We check it before anything is spent: a bad strategy is refused before the upload, with the reason.
+    For a short or your own leverage send `legs` instead of `markets`; for anything else, the full config. The [purps.lol guide](/guides/launch-solana#a-strategy-launch) has all three forms and every option. We check it before anything is spent: a bad strategy is refused before the upload, with the reason.
 
     You get back `transactions`, `createIndex`, `mintSecret` and `feeRouting.transaction`.
   </Step>
