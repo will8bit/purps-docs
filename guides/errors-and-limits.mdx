@@ -17,6 +17,8 @@ A `429` from the per-minute limiter and the paused `503` also carry `retryAfterS
 | `expired` | `400` | A relayed transaction's blockhash aged out. Rebuild and sign again. | no |
 | `rejected` | `400` | The chain refused a relayed transaction. | no |
 | `unauthorized` | `401` | The signature is invalid, its timestamp is too old, or the nonce wasn't issued for this wallet and action. | no |
+| `helius_key_required` | `401` | This call reads Solana on your own Helius key and none was sent. Add `X-Helius-Key`. | no |
+| `helius_key_rejected` | `401` | Helius refused the key you sent as `X-Helius-Key`. | no |
 | `forbidden` | `403` | The wallet can't do this yet, or the feature isn't open. | no |
 | `blocked` | `403` | This address is blocked. | no |
 | `not_found` | `404` | The coin or launch doesn't exist. | no |
@@ -31,6 +33,16 @@ A `429` from the per-minute limiter and the paused `503` also carry `retryAfterS
 | `paused` | `503` | The whole API is switched off for a while. | yes |
 
 A `503` with code `paused`, a `Retry-After` header and the reason `the public API is paused for maintenance — check back soon` means the whole API is off for a while. Nothing is wrong with your request. Come back after the wait.
+
+## Your own Helius key
+
+Three calls read Solana on demand rather than from our own records: `GET /transactions/{signature}`, `GET /redirects/{mint}` and `POST /pumpfun/fees`. They run on your Helius key, not ours, so send it as a header:
+
+```
+X-Helius-Key: 1b2c3d4e-…
+```
+
+A free key from [helius.dev](https://www.helius.dev) is enough. Without the header the call is a `401` with code `helius_key_required`; a key Helius refuses is a `401` with code `helius_key_rejected`. Every other call needs no key. Your key is used for that request only and is never stored or logged.
 
 ## Rate limits
 
@@ -63,8 +75,8 @@ Cached reads leave those two out on purpose: an edge cache would otherwise hand 
 | `GET /launch-options` | 60 a minute | yes, 10 seconds |
 | `GET /launches/{mint}` | 120 a minute | yes, 3 seconds |
 | `POST /pumpfun/launches` | 10 a minute | no |
-| `POST /pumpfun/fees` | 30 a minute | no |
-| `GET /redirects/{mint}` | 10 a minute | yes, 30 seconds |
+| `POST /pumpfun/fees` (your Helius key) | 30 a minute | no |
+| `GET /redirects/{mint}` (your Helius key) | 10 a minute | yes, 30 seconds |
 | `POST /redirects` | 10 a minute | no |
 | `POST /pons/launches/prepare` | 30 a minute | no |
 | `POST /pons/launches/submit` | 4 a minute | no |
@@ -79,7 +91,7 @@ Cached reads leave those two out on purpose: an edge cache would otherwise hand 
 | `POST /coins/{mint}/authority/prepare` | 30 a minute | no |
 | `POST /coins/{mint}/authority/submit` | 10 a minute | no |
 | `POST /transactions/send` | 60 a minute | no |
-| `GET /transactions/{signature}` | 120 a minute | yes, 2 seconds |
+| `GET /transactions/{signature}` (your Helius key) | 120 a minute | yes, 2 seconds |
 
 Hourly budgets sit on top of the per-minute limits, and their `429` says so in the message. Launch builds: 8 an hour per wallet, 20 an hour per address, 240 an hour site-wide, on purps.lol and on pump.fun each; a new fee level on purps.lol needs its own on-chain setup and is allowed 2 an hour per address and 6 an hour site-wide. Fetching a logo by `imageUrl`: 20 an hour per address, 200 an hour site-wide; when that runs out the build asks for `image` as a data URL instead, which is never budgeted. Pons: 10 launch builds and 20 registrations an hour per wallet. Creator authority: 60 actions, 30 strategy changes, 10 requests and 20 handovers an hour per address, plus a per-coin count of position actions a day and a cooldown after each change; the limit and the running cooldowns are on `GET /coins/{mint}/authority`.
 

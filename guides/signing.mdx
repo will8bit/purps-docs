@@ -120,7 +120,7 @@ The signature is checked against the wallet named in prepare: the coin's owner, 
 
 We never sign your transactions. On Solana, a build returns unsigned transactions as base64. You sign them and send them through your own node or `POST /transactions/send`. The relay is only required for a purps.lol create, where it adds the launchpad's memo signature, and it only forwards the shapes a launch flow produces. On Pons, submit returns EVM transactions as `{ to, data, value, chainId }` steps that you send from your own wallet.
 
-When a flow gives you more than one transaction, send them in order and **wait for each to confirm before sending the next**: a later one spends what an earlier one produced. `/transactions/send` waits up to 8 seconds and returns `confirmed`. If that's false, poll `GET /transactions/{signature}` every couple of seconds until it's true.
+When a flow gives you more than one transaction, send them in order and **wait for each to confirm before sending the next**: a later one spends what an earlier one produced. `/transactions/send` waits up to 8 seconds and returns `confirmed`. If that's false, poll `GET /transactions/{signature}` every couple of seconds until it's true. That poll reads Solana on your own Helius key, sent as `X-Helius-Key`; a free key is enough, or poll your own node instead.
 
 A launch's create transaction also needs the mint keypair's signature. The build returns it as `mintSecret`. It has no power beyond that one transaction.
 

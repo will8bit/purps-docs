@@ -28,7 +28,7 @@ There's no message to sign. The launch transaction can only land with your walle
     `POST /launches` with `name`, `symbol`, `quoteMint`, `feePreset`, `creatorWallet`, the logo (`image` as a data URL, or `imageUrl`), and optionally `feeSplit`, `devBuySol`, `creatorFeeBps`, `strategy` (a preset and the markets, see below), `description`, `twitter` and `telegram`. We check the strategy, upload the metadata, build the transactions and record the launch as pending. A bad strategy, or a wallet the launchpad doesn't admit, is refused before anything is uploaded.
   </Step>
   <Step title="Sign and send">
-    Sign each of `transactions` with the creator wallet, and the one at `createIndex` with the mint keypair from `mintSecret` as well. `POST /transactions/send` them one at a time, in order, waiting for each to confirm before the next (a swap can go through your own node; the create at `createIndex` must go through the relay, which adds the launchpad's memo signature). When the pair isn't SOL and there's a dev buy, the first transaction is a swap the launch spends. Send `wait: 30` with each send and most of them answer `confirmed` straight away. If `confirmed` is false, poll `GET /transactions/{signature}` until it is.
+    Sign each of `transactions` with the creator wallet, and the one at `createIndex` with the mint keypair from `mintSecret` as well. `POST /transactions/send` them one at a time, in order, waiting for each to confirm before the next (a swap can go through your own node; the create at `createIndex` must go through the relay, which adds the launchpad's memo signature). When the pair isn't SOL and there's a dev buy, the first transaction is a swap the launch spends. Send `wait: 30` with each send and most of them answer `confirmed` straight away. If `confirmed` is false, poll `GET /transactions/{signature}` until it is; that poll runs on your own Helius key, sent as `X-Helius-Key`.
   </Step>
   <Step title="Wait for live">
     Poll `GET /launches/{mint}` every few seconds until `status` is `live`, usually within half a minute of the create confirming. We watch the chain and flip it ourselves. You don't need to stay online; if your process dies after sending, the launch still completes. A launch whose transaction never lands turns `failed` after about an hour.
@@ -102,7 +102,7 @@ Anything carrying `splitBuybackBps` is taken as the full form.
 
 ## A complete example
 
-Node 20+, `npm i @solana/web3.js bs58`. Launches a coin paired with SOL that airdrops its fees to holders, from a keypair file.
+Node 20+, `npm i @solana/web3.js bs58`, and your own free Helius key in `HELIUS_API_KEY` (the status polls run on it). Launches a coin paired with SOL that airdrops its fees to holders, from a keypair file.
 
 ```js launch.mjs
 import fs from "node:fs";
@@ -114,7 +114,8 @@ const creator = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function call(path, body) {
-  const res = await fetch(API + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : undefined);
+  const headers = { "x-helius-key": process.env.HELIUS_API_KEY, ...(body ? { "content-type": "application/json" } : {}) };
+  const res = await fetch(API + path, { method: body ? "POST" : "GET", headers, body: body ? JSON.stringify(body) : undefined });
   const json = await res.json();
   if (!json.ok) throw new Error(`${path}: ${json.error}`);
   return json.data;

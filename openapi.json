@@ -3,7 +3,7 @@
   "info": {
     "title": "PURPS API",
     "version": "2.0.0",
-    "description": "Everything purps.lol does, as JSON. Read the coin list, a coin's full page and the launchpad; launch coins on purps.lol, pump.fun and Pons; point an existing pump.fun coin's fees at a strategy; steer a coin you own. No key, no signup. A launch is one call that returns unsigned transactions. The launch transaction can only land with your wallet's signature, and that's the proof. If the build carries a strategy, we attach it once the launch lands on chain, on every launchpad. A strategy is either the short form, a preset name and the markets (`{ preset: \"balanced\", markets: [\"ETH\"] }`), or the full config; both work everywhere a strategy is taken. The few writes that need a message signature (Pons launches, attaching a strategy to a coin, creator authority) are a prepare/submit pair. You sign every transaction in your wallet; we never do. Every response is `{ ok: true, data }` or `{ ok: false, error }`. Cross-origin requests are allowed from any site. Every answer from the API itself carries `RateLimit-Limit` and `RateLimit-Policy`; uncached ones (writes, prepare and submit, refusals) carry `RateLimit-Remaining` and `RateLimit-Reset` as well. The 503 while the API is paused and the 410 on old v1 write addresses carry neither."
+    "description": "Everything purps.lol does, as JSON. Read the coin list, a coin's full page and the launchpad; launch coins on purps.lol, pump.fun and Pons; point an existing pump.fun coin's fees at a strategy; steer a coin you own. No signup. Most calls need no key; the three that read Solana on demand (transaction status, checking a pump.fun coin, building its fee routing) run on your own free Helius key, sent as `X-Helius-Key`. A launch is one call that returns unsigned transactions. The launch transaction can only land with your wallet's signature, and that's the proof. If the build carries a strategy, we attach it once the launch lands on chain, on every launchpad. A strategy is either the short form, a preset name and the markets (`{ preset: \"balanced\", markets: [\"ETH\"] }`), or the full config; both work everywhere a strategy is taken. The few writes that need a message signature (Pons launches, attaching a strategy to a coin, creator authority) are a prepare/submit pair. You sign every transaction in your wallet; we never do. Every response is `{ ok: true, data }` or `{ ok: false, error }`. Cross-origin requests are allowed from any site. Every answer from the API itself carries `RateLimit-Limit` and `RateLimit-Policy`; uncached ones (writes, prepare and submit, refusals) carry `RateLimit-Remaining` and `RateLimit-Reset` as well. The 503 while the API is paused and the 410 on old v1 write addresses carry neither."
   },
   "servers": [
     {
@@ -1001,6 +1001,17 @@
         "operationId": "pumpFeeRouting",
         "summary": "Lock fee routing",
         "description": "Builds pump.fun's fee-sharing transaction that sends the coin's creator fees to its PURPS wallet permanently. Only the coin's on-chain creator can sign it. A launch built through /pumpfun/launches already comes with this transaction as `feeRouting`; call this when that one's blockhash has aged out, when `feeRouting` was null, or as the first step for redirecting a pump.fun coin you launched elsewhere. `done: true` means it's already in place.",
+        "parameters": [
+          {
+            "name": "X-Helius-Key",
+            "in": "header",
+            "required": true,
+            "description": "Your own Helius API key; a free one from helius.dev is enough. This call reads Solana on demand and does so on your key, not ours. Missing: a 401 with code `helius_key_required`. Refused by Helius: a 401 with code `helius_key_rejected`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1038,6 +1049,16 @@
             }
           },
           "400": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
             "description": "Every failure carries the same envelope.",
             "content": {
               "application/json": {
@@ -1097,6 +1118,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Helius-Key",
+            "in": "header",
+            "required": true,
+            "description": "Your own Helius API key; a free one from helius.dev is enough. This call reads Solana on demand and does so on your key, not ours. Missing: a 401 with code `helius_key_required`. Refused by Helius: a 401 with code `helius_key_rejected`.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "x-rate-limit": "10 a minute",
@@ -1121,6 +1151,16 @@
                       "$ref": "#/components/schemas/Redirect"
                     }
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -2563,6 +2603,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Helius-Key",
+            "in": "header",
+            "required": true,
+            "description": "Your own Helius API key; a free one from helius.dev is enough. This call reads Solana on demand and does so on your key, not ours. Missing: a 401 with code `helius_key_required`. Refused by Helius: a 401 with code `helius_key_rejected`.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "x-rate-limit": "120 a minute",
@@ -2601,6 +2650,16 @@
               }
             }
           },
+          "401": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Every failure carries the same envelope.",
             "content": {
@@ -2630,7 +2689,7 @@
           },
           "code": {
             "type": "string",
-            "description": "The fixed word to branch on. `invalid_request` (400) something in the request is wrong; `unauthorized` (401) a signature, timestamp or nonce failed; `forbidden` (403) the wallet may not do this or the feature is closed; `blocked` (403) this address is blocked; `not_found` (404); `conflict` (409) the action does not fit the state; `gone` (410) an old v1 write address; `payload_too_large` (413); `refused` (422) a strategy or money check said no; `frozen` (423) creator authority is frozen; `rate_limited` (429); `expired` (400) a relayed transaction's blockhash aged out, rebuild and sign again; `rejected` (400) the chain refused a relayed transaction; `internal` (500); `unavailable` (503) something we depend on is down; `paused` (503) the whole API is switched off for a while.",
+            "description": "The fixed word to branch on. `invalid_request` (400) something in the request is wrong; `unauthorized` (401) a signature, timestamp or nonce failed; `forbidden` (403) the wallet may not do this or the feature is closed; `blocked` (403) this address is blocked; `not_found` (404); `conflict` (409) the action does not fit the state; `gone` (410) an old v1 write address; `payload_too_large` (413); `refused` (422) a strategy or money check said no; `frozen` (423) creator authority is frozen; `rate_limited` (429); `expired` (400) a relayed transaction's blockhash aged out, rebuild and sign again; `rejected` (400) the chain refused a relayed transaction; `helius_key_required` (401) this call runs on your own Helius key and none was sent; `helius_key_rejected` (401) Helius refused the key you sent; `internal` (500); `unavailable` (503) something we depend on is down; `paused` (503) the whole API is switched off for a while.",
             "enum": [
               "invalid_request",
               "unauthorized",
@@ -2645,6 +2704,8 @@
               "rate_limited",
               "expired",
               "rejected",
+              "helius_key_required",
+              "helius_key_rejected",
               "internal",
               "unavailable",
               "paused"
