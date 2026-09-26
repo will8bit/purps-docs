@@ -13,7 +13,7 @@ Money never leaves the coin here. A close or trim either parks the freed margin 
 
 `GET /coins/{mint}/authority` tells you where things stand:
 
-- `available`: whether the coin can be steered from outside at all. It must be a purps.lol launch with a strategy wired, and not the flagship. `reason` says why not.
+- `available`: whether the coin can be steered from outside at all. It must be a purps.lol launch with a strategy wired, and not the flagship ($PURPS itself). `reason` says why not.
 - `state`: `on` while the owner may steer it (chosen at launch while authority was open, or turned on after a request), `off` otherwise, `frozen` when an admin has stopped everyone.
 - `owner`: the wallet that must sign.
 - `limits`: the most leverage an owner may set, how many position actions a coin gets a day, how long each change cools down, the depth a market must have before the coin can be moved into it, and the note length.
@@ -25,7 +25,7 @@ A coin that chose `ownerControls: true` at launch has authority from the start, 
 
 <Steps>
   <Step title="action">
-    One move on one position. `close` it (`margin: "hold"` parks the money for a re-entry, `"home"` pays it out), `trim` a percentage of it, `swap` it for another market or flip its side, `open` a leg that sits flat with what's parked for it, change its `leverage` (keep the margin and resize, or keep the size and move margin), or move `margin` between the position and the reserve. The exact shapes are in the OwnerAction schema on the reference page. A `note` of 3 to 140 characters is required: it's in the signed words and holders read it.
+    One move on one position. `close` it (`margin: "hold"` parks the money for a re-entry, `"home"` pays it out), `trim` a percentage of it, `swap` it for another market or flip its side, `open` a leg that sits flat with what's parked for it, change its `leverage` (keep the margin and resize, or keep the size and move margin), or move `margin` between the position and the reserve. The exact shapes are the `OwnerAction` schema on `POST /coins/{mint}/authority/prepare` in the reference. A `note` of 3 to 140 characters is required: it's in the signed words and holders read it.
   </Step>
   <Step title="strategy">
     Replace the whole strategy: the fee split, the take-profit and dip-buy rules, the markets and their leverage, the payout assets. Send the whole new `config`, as at launch (a preset and the markets, `{ "preset": "balanced", "markets": ["ETH"] }`, or the full config), plus a `note`. A leg with an open position keeps it: removing or flipping such a leg is refused, so close it with its own signed action first. Its leverage stays at the exchange's current figure (change that with the `leverage` action, not here). The share that buys back or pays holders can go up, but never below what the coin launched with. A coin that pays holders can't switch to burning.

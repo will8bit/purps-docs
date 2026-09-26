@@ -32,7 +32,6 @@ A `429` from the per-minute limiter and the paused `503` also carry `retryAfterS
 | `unavailable` | `503` | We couldn't reach something we depend on, or the site is mid-deploy. | yes |
 | `paused` | `503` | The whole API is switched off for a while. | yes |
 
-A `503` with code `paused`, a `Retry-After` header and the reason `the public API is paused for maintenance — check back soon` means the whole API is off for a while. Nothing is wrong with your request. Come back after the wait.
 
 ## Your own Helius key
 
@@ -42,7 +41,7 @@ Three calls read Solana on demand rather than from our own records: `GET /transa
 X-Helius-Key: 1b2c3d4e-…
 ```
 
-A free key from [helius.dev](https://www.helius.dev) is enough. Without the header the call is a `401` with code `helius_key_required`; a key Helius refuses is a `401` with code `helius_key_rejected`. Every other call needs no key. Your key is used for that request only and is never stored or logged.
+A free key from [helius.dev](https://www.helius.dev) is enough. Without the header the call is a `401` with code `helius_key_required`; a value that isn't shaped like a Helius key is a `400`; a key Helius refuses is a `401` with code `helius_key_rejected`. Every other call needs no key. Your key is used for that request only and is never stored or logged.
 
 ## Rate limits
 

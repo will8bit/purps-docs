@@ -653,6 +653,16 @@
               }
             }
           },
+          "422": {
+            "description": "Every failure carries the same envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Every failure carries the same envelope.",
             "content": {
@@ -2526,7 +2536,7 @@
         ],
         "operationId": "sendTransaction",
         "summary": "Send a signed transaction",
-        "description": "Relay a signed Solana transaction from a launch flow: the launch itself, the swap in front of it, the fee-routing step. Only those shapes are forwarded; anything else is refused. Optional for everything but a purps.lol create, which needs the launchpad's memo signature this relay adds; everything else can go through your own node. Waits up to 8 seconds for confirmation. `confirmed: false` means it was sent but not yet seen; poll /transactions/{signature}. A refused transaction is a 400 whose `detail.code` is `expired` (the blockhash aged out: rebuild and sign again) or `rejected`.",
+        "description": "Relay a signed Solana transaction from a launch flow: the launch itself, the swap in front of it, the fee-routing step. Only those shapes are forwarded; anything else is refused. Optional for everything but a purps.lol create, which needs the launchpad's memo signature this relay adds; everything else can go through your own node. Waits up to 8 seconds for confirmation. `confirmed: false` means it was sent but not yet seen; poll /transactions/{signature}. A refused transaction is a 400 whose `code` is `expired` (the blockhash aged out: rebuild and sign again) or `rejected`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2593,7 +2603,7 @@
         ],
         "operationId": "getTransaction",
         "summary": "Transaction status",
-        "description": "Whether a relayed transaction has confirmed or failed on chain.",
+        "description": "Whether a Solana transaction has confirmed or failed on chain: one you relayed through us, or one you sent yourself.",
         "parameters": [
           {
             "name": "signature",
@@ -3593,30 +3603,6 @@
           "createdAt": {
             "type": "string",
             "description": "When it launched."
-          },
-          "url": {
-            "type": "string",
-            "description": "The coin's page on purps.lol."
-          }
-        }
-      },
-      "LaunchStatus": {
-        "type": "object",
-        "description": "The Launch object; `status` is what a caller waiting on it watches.",
-        "properties": {
-          "status": {
-            "type": "string",
-            "description": "`pending` → `live` → `migrated`, or `failed`.",
-            "enum": [
-              "pending",
-              "live",
-              "migrated",
-              "failed"
-            ]
-          },
-          "mint": {
-            "type": "string",
-            "description": "The coin's mint."
           },
           "url": {
             "type": "string",
@@ -5079,7 +5065,7 @@
           },
           "usdc": {
             "type": "number",
-            "description": "`margin`: the dollars to move, at most 100000, in cents. `open`: how much of the parked money to open with; all of it when absent."
+            "description": "`margin`: the dollars to move, to the cent, at most 100,000. `open`: how much of the parked money to open with; all of it when absent."
           },
           "method": {
             "type": "string",

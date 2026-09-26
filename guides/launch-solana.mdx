@@ -141,7 +141,7 @@ const mintKey = Keypair.fromSecretKey(bs58.decode(build.mintSecret));
 for (const [i, b64] of build.transactions.entries()) {
   const tx = VersionedTransaction.deserialize(Buffer.from(b64, "base64"));
   tx.sign(i === build.createIndex ? [creator, mintKey] : [creator]);
-  let { signature: sig, confirmed } = await call("/transactions/send", { transaction: Buffer.from(tx.serialize()).toString("base64") });
+  let { signature: sig, confirmed } = await call("/transactions/send", { transaction: Buffer.from(tx.serialize()).toString("base64"), wait: 30 });
   while (!confirmed) {
     await sleep(2000);
     const st = await call(`/transactions/${sig}`);

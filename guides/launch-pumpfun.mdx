@@ -30,7 +30,7 @@ The coin is created on pump.fun with its on-chain creator set to the coin's PURP
   <Step title="Sign and send the fee routing">
     Once the create has confirmed: sign `feeRouting.transaction` with the creator wallet only (no mint key) and send it the same way. This is pump.fun's fee-sharing config. Once set, the coin's creator fees go to its PURPS wallet permanently.
 
-    It was built with the launch and carries that blockhash, so send it within a minute or so. If it has aged out (`/transactions/send` answers `400` with `detail.code` `expired`), `POST /pumpfun/fees` with `mint` and `creatorWallet` builds a fresh one. The same call covers a build whose `feeRouting` came back `null`.
+    It was built with the launch and carries that blockhash, so send it within a minute or so. If it has aged out (`/transactions/send` answers `400` with `code` `expired`), `POST /pumpfun/fees` with `mint` and `creatorWallet` builds a fresh one. The same call covers a build whose `feeRouting` came back `null`.
   </Step>
   <Step title="Done">
     We watch the chain and register the strategy within about 15 seconds of the fee routing landing. You don't need to stay online. Poll `GET /coins/{mint}` until it answers, or `GET /redirects/{mint}` (with your `X-Helius-Key` header) until `registered` is true. The coin is then live on purps.lol with its strategy running.

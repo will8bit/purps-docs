@@ -41,7 +41,7 @@ A launch built without `config`, or made outside the API, is registered by hand,
 
 1. `GET /pons/launches/{ref}` with the launch hash returns the token address and the `walletKey`.
 2. `POST /pons/register/prepare` with `creatorWallet`, `txHash`, `walletKey` and the `config` (the short form above, or the full one). The message says the strategy in words on a `sets:` line next to its hash. Sign it.
-3. `POST /pons/register/submit` with the same four fields plus `name`, `symbol`, `imageUrl` (an https link), `ts` and `signature`. If `registered` is false with a reason, the launch isn't indexed yet: wait a few seconds and retry.
+3. `POST /pons/register/submit` with the same four fields plus `name`, `symbol`, optionally `imageUrl` (an https link), `ts` and `signature`. If `registered` is false with a reason, the launch isn't indexed yet: wait a few seconds and retry.
 
 ## Sending a step
 
