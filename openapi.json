@@ -3571,6 +3571,11 @@
             "type": "string",
             "description": "Who launched it."
           },
+          "partner": {
+            "type": "string",
+            "description": "The product that built the launch through the API, when it named itself.",
+            "nullable": true
+          },
           "feeWallet": {
             "type": "string",
             "description": "Where creator fees land.",
@@ -3806,7 +3811,7 @@
             "items": {
               "type": "string"
             },
-            "description": "The markets to hold, by name from /markets, up to 10, each once. Every leg is long at 2x and the weight is split evenly. Send this or `legs`; the `airdrop` preset takes neither."
+            "description": "The simplest form: market names from /markets, up to 10, each once. Every leg is long at 2x with the weight split evenly. For a short, or a different leverage, send `legs` instead of this; for uneven weights, your own fee split or a take-profit, send the full Strategy. The `airdrop` preset takes neither."
           },
           "legs": {
             "type": "array",
@@ -4159,6 +4164,10 @@
           "telegram": {
             "type": "string",
             "description": "https:// link."
+          },
+          "partner": {
+            "type": "string",
+            "description": "Your product's name, if you're building on the API: 2 to 40 characters, letters, digits, spaces, dots, dashes, underscores. Shown on the coin page as \"launched via\". Optional, and the only thing it changes is that credit."
           }
         }
       },
@@ -4224,6 +4233,10 @@
           "telegram": {
             "type": "string",
             "description": "https:// link."
+          },
+          "partner": {
+            "type": "string",
+            "description": "Your product's name, if you're building on the API: 2 to 40 characters, letters, digits, spaces, dots, dashes, underscores. Shown on the coin page as \"launched via\". Optional, and the only thing it changes is that credit."
           }
         }
       },
@@ -4541,6 +4554,10 @@
           "telegram": {
             "type": "string",
             "description": "https:// link."
+          },
+          "partner": {
+            "type": "string",
+            "description": "Your product's name, if you're building on the API: 2 to 40 characters, letters, digits, spaces, dots, dashes, underscores. Shown on the coin page as \"launched via\". Optional, and the only thing it changes is that credit."
           },
           "ts": {
             "type": "integer",
